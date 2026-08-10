@@ -1,0 +1,355 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #eef3f1;
+  --bg-accent: #d7e8e2;
+  --surface: #fbfcfb;
+  --ink: #13241f;
+  --muted: #5a6f68;
+  --line: #c9d8d2;
+  --teal: #0f6b5c;
+  --teal-deep: #0a4d42;
+  --teal-soft: #dff3ee;
+  --amber: #c47a1a;
+  --shadow: 0 18px 50px rgba(19, 36, 31, 0.08);
+  --radius: 18px;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, #cfe8e1 0%, transparent 55%),
+    radial-gradient(900px 420px at 100% 0%, #f3e6c8 0%, transparent 45%),
+    linear-gradient(180deg, #f4f7f5 0%, var(--bg) 40%, #e7efeb 100%);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.builder {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, #1a9b84, var(--teal-deep));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: 12px 10px 12px 18px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px 999px 999px 4px;
+  transform: rotate(-18deg);
+}
+
+.brand-name {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.85rem;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.brand-sub {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.65rem 1.05rem;
+  cursor: pointer;
+  transition: 0.18s ease;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.btn.small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.84rem;
+}
+
+.btn.primary {
+  background: var(--teal);
+  color: white;
+}
+
+.btn.primary:hover {
+  background: var(--teal-deep);
+}
+
+.btn.secondary {
+  background: white;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.btn.secondary:hover {
+  border-color: var(--teal);
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.btn.ghost:hover {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+
+.exam-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 18px;
+  scrollbar-width: thin;
+}
+
+.exam-tab {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: 0.18s ease;
+}
+
+.exam-tab:hover {
+  color: var(--ink);
+}
+
+.exam-tab.active {
+  background: var(--teal-soft);
+  border-color: #9ecfc3;
+  color: var(--teal-deep);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid rgba(201, 216, 210, 0.9);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.panel-title {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.panel-title.spaced {
+  margin-top: 28px;
+}
+
+.hint {
+  margin: 8px 0 16px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.patient-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.6fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.field input,
+.field textarea,
+.preview-edit {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.field input:focus,
+.field textarea:focus,
+.preview-edit:focus {
+  outline: 2px solid rgba(15, 107, 92, 0.25);
+  border-color: var(--teal);
+}
+
+.impressao-field {
+  margin-top: 22px;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-block h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 600;
+  transition: 0.15s ease;
+}
+
+.chip:hover {
+  border-color: #9ecfc3;
+}
+
+.chip.on {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+.preview-panel {
+  position: sticky;
+  top: 16px;
+  min-height: 640px;
+  display: flex;
+  flex-direction: column;
+  background:
+    linear-gradient(180deg, #fffefb 0%, #f7faf8 100%);
+}
+
+.preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.preview-text,
+.preview-edit {
+  flex: 1;
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #1b2a26;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  min-height: 560px;
+  overflow: auto;
+}
+
+.preview-edit {
+  resize: vertical;
+}
+
+@media (max-width: 980px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-panel {
+    position: static;
+    min-height: unset;
+  }
+
+  .patient-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-name {
+    font-size: 1.55rem;
+  }
+}
