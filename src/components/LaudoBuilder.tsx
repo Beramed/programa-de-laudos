@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { exames, getExame } from "@/data/exames";
+import type { SessaoMedico } from "@/lib/auth";
+import { tituloMedico } from "@/lib/auth";
 import {
   montarLaudo,
   selecoesPadrao,
@@ -17,7 +19,11 @@ const pacienteVazio = (): DadosPaciente => ({
   indicacao: "",
 });
 
-export default function LaudoBuilder() {
+type Props = {
+  medico: SessaoMedico;
+};
+
+export default function LaudoBuilder({ medico }: Props) {
   const [exameId, setExameId] = useState(exames[0].id);
   const exame = getExame(exameId)!;
   const [selecoes, setSelecoes] = useState<Selecoes>(() =>
@@ -37,9 +43,11 @@ export default function LaudoBuilder() {
     setEditavel(false);
   }, [exameId]);
 
+  const assinatura = `${tituloMedico(medico)} — CRM ${medico.crm}`;
+
   const laudoGerado = useMemo(
-    () => montarLaudo(exame, selecoes, paciente, impressao),
-    [exame, selecoes, paciente, impressao],
+    () => montarLaudo(exame, selecoes, paciente, impressao, assinatura),
+    [exame, selecoes, paciente, impressao, assinatura],
   );
 
   const textoFinal = editavel ? textoEditado : laudoGerado;
@@ -98,10 +106,9 @@ export default function LaudoBuilder() {
     <div className="builder">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden />
           <div>
-            <p className="brand-name">Laudos US</p>
-            <p className="brand-sub">Montador de laudos de ultrassom</p>
+            <p className="brand-name">{tituloMedico(medico)}</p>
+            <p className="brand-sub">CRM {medico.crm} · BeraMed Laudos</p>
           </div>
         </div>
         <div className="top-actions">

@@ -1,5 +1,5 @@
-import LaudoBuilder from "@/components/LaudoBuilder";
+import LoginForm from "@/components/LoginForm";
 
 export default function Home() {
-  return <LaudoBuilder />;
+  return <LoginForm />;
 }

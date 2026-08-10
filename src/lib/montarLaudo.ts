@@ -29,6 +29,7 @@ export function montarLaudo(
   selecoes: Selecoes,
   paciente: DadosPaciente,
   impressaoCustom?: string,
+  assinatura?: string,
 ): string {
   const linhas: string[] = [];
 
@@ -84,7 +85,7 @@ export function montarLaudo(
   );
   linhas.push("");
   linhas.push("_______________________________");
-  linhas.push("Médico(a) responsável");
+  linhas.push(assinatura?.trim() || "Médico(a) responsável");
 
   return linhas.join("\n");
 }

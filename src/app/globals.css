@@ -1,17 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #eef3f1;
-  --bg-accent: #d7e8e2;
-  --surface: #fbfcfb;
-  --ink: #13241f;
-  --muted: #5a6f68;
-  --line: #c9d8d2;
-  --teal: #0f6b5c;
-  --teal-deep: #0a4d42;
-  --teal-soft: #dff3ee;
+  --bg: #eef2f6;
+  --bg-accent: #d7e4f0;
+  --surface: #fbfcfd;
+  --ink: #0f2744;
+  --muted: #5a6d82;
+  --line: #c9d5e2;
+  --teal: #0f6e8c;
+  --teal-deep: #0a4a6e;
+  --teal-soft: #dff1f6;
   --amber: #c47a1a;
-  --shadow: 0 18px 50px rgba(19, 36, 31, 0.08);
+  --navy: #0f2744;
+  --shadow: 0 18px 50px rgba(15, 39, 68, 0.1);
   --radius: 18px;
 }
 
@@ -36,9 +37,9 @@ body {
   color: var(--ink);
   font-family: var(--font-body), "Segoe UI", sans-serif;
   background:
-    radial-gradient(1200px 500px at 10% -10%, #cfe8e1 0%, transparent 55%),
-    radial-gradient(900px 420px at 100% 0%, #f3e6c8 0%, transparent 45%),
-    linear-gradient(180deg, #f4f7f5 0%, var(--bg) 40%, #e7efeb 100%);
+    radial-gradient(1200px 500px at 10% -10%, #cfe0ef 0%, transparent 55%),
+    radial-gradient(900px 420px at 100% 0%, #d7f0f4 0%, transparent 45%),
+    linear-gradient(180deg, #f3f6f9 0%, var(--bg) 40%, #e8eef4 100%);
 }
 
 button,
@@ -351,5 +352,256 @@ textarea {
 
   .brand-name {
     font-size: 1.55rem;
+  }
+}
+
+/* —— Auth / login —— */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px 16px;
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(201, 213, 226, 0.95);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  padding: 28px 26px 30px;
+  backdrop-filter: blur(8px);
+}
+
+.auth-card-wide {
+  width: min(640px, 100%);
+}
+
+.auth-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.auth-logo-wrap.compact {
+  margin-bottom: 4px;
+}
+
+.auth-logo {
+  width: min(280px, 78vw);
+  height: auto;
+  object-fit: contain;
+}
+
+.auth-title {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+}
+
+.auth-subtitle {
+  margin: 6px 0 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.register-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.register-grid .full {
+  grid-column: 1 / -1;
+}
+
+.auth-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 0 12px;
+  min-height: 52px;
+}
+
+.auth-field:focus-within {
+  border-color: var(--teal);
+  outline: 2px solid rgba(15, 110, 140, 0.18);
+}
+
+.auth-icon {
+  color: var(--teal-deep);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.auth-field input {
+  border: 0;
+  outline: none;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  padding: 0.85rem 0;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.auth-eye {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.35rem 0.2rem;
+}
+
+.auth-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.auth-error {
+  margin: 0;
+  color: #b42318;
+  background: #fff1f0;
+  border: 1px solid #f3c1bc;
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.auth-ok {
+  margin: 0;
+  color: #0a6b4a;
+  background: #e9f8f1;
+  border: 1px solid #b7e2d0;
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 4px;
+  justify-content: center;
+}
+
+.auth-switch {
+  margin: 18px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.auth-switch a {
+  color: var(--teal-deep);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-switch a:hover {
+  text-decoration: underline;
+}
+
+.auth-loading {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.genero-field {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.genero-field legend {
+  padding: 0 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.genero-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font-weight: 700;
+  background: #fff;
+}
+
+.genero-option.on {
+  background: var(--teal-soft);
+  border-color: #9ec9d8;
+  color: var(--teal-deep);
+}
+
+.genero-option input {
+  accent-color: var(--teal);
+}
+
+.laudos-shell {
+  min-height: 100vh;
+}
+
+.medico-banner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 18px 20px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.medico-saudacao {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+}
+
+.medico-crm {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .register-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .medico-banner {
+    flex-direction: column;
   }
 }

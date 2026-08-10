@@ -15,9 +15,9 @@ const body = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "Laudos US — Montador de laudos de ultrassom",
+  title: "BeraMed Laudos — Ultrassom",
   description:
-    "Programa de laudos de ultrassom prontos: escolha os achados e monte o texto automaticamente.",
+    "Programa de laudos de ultrassom prontos: cadastro médico, login por CRM e montagem automática do texto.",
 };
 
 export default function RootLayout({
