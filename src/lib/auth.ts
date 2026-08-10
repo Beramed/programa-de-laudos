@@ -165,7 +165,6 @@ export function cadastrarMedico(dados: Medico): string | null {
   if (!bairro) return "Informe o bairro.";
   if (!cidade) return "Informe a cidade.";
   if (!estado || estado.length !== 2) return "Informe o estado (UF).";
-  if (!especialidade) return "Informe a especialidade médica.";
   if (dados.genero !== "Dr." && dados.genero !== "Dra.") {
     return "Selecione Dr. ou Dra.";
   }
@@ -231,7 +230,6 @@ function validarDadosPerfil(
   if (!bairro) return "Informe o bairro.";
   if (!cidade) return "Informe a cidade.";
   if (!estado || estado.length !== 2) return "Informe o estado (UF).";
-  if (!especialidade) return "Informe a especialidade médica.";
   if (dados.genero !== "Dr." && dados.genero !== "Dra.") {
     return "Selecione Dr. ou Dra.";
   }

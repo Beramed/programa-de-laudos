@@ -202,12 +202,11 @@ export default function CadastroForm() {
           </label>
 
           <label className="field">
-            <span>Especialidade médica</span>
+            <span>Especialidade médica (opcional)</span>
             <input
               value={especialidade}
               onChange={(ev) => setEspecialidade(ev.target.value)}
               placeholder="Ex.: Radiologia / Ultrassonografia"
-              required
             />
           </label>
 

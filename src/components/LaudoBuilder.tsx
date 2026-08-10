@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { exames, getExame } from "@/data/exames";
 import type { SessaoMedico } from "@/lib/auth";
-import { assinaturaMedico, tituloMedico } from "@/lib/auth";
+import { assinaturaMedico } from "@/lib/auth";
 import {
   montarLaudo,
   selecoesPadrao,
@@ -107,13 +107,8 @@ export default function LaudoBuilder({ medico }: Props) {
       <header className="topbar">
         <div className="brand">
           <div>
-            <p className="brand-name">{tituloMedico(medico)}</p>
-            <p className="brand-sub">
-              CRM {medico.crm}
-              {medico.especialidade ? ` · ${medico.especialidade}` : ""}
-              {medico.rqe ? ` · RQE ${medico.rqe}` : ""}
-              {" · BeraMed Laudos"}
-            </p>
+            <p className="brand-name">BeraMed Laudos</p>
+            <p className="brand-sub">Montador de laudos de ultrassom</p>
           </div>
         </div>
         <div className="top-actions">

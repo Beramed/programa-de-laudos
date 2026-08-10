@@ -211,11 +211,10 @@ export default function EditarPerfilModal({
           </label>
 
           <label className="field">
-            <span>Especialidade</span>
+            <span>Especialidade (opcional)</span>
             <input
               value={especialidade}
               onChange={(ev) => setEspecialidade(ev.target.value)}
-              required
             />
           </label>
 
