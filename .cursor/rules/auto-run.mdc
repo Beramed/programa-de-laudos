@@ -1,0 +1,11 @@
+---
+description: Sempre executar comandos e deploys sem pedir confirmação
+alwaysApply: true
+---
+
+# Execução automática
+
+- Sempre rode comandos, builds, testes, `git push` e `npx vercel --prod --yes` sem perguntar.
+- Não peça "posso rodar?" / "aprova o deploy?" no chat.
+- Se o sistema bloquear e exigir aprovação, peça a aprovação nativa imediatamente e continue.
+- Após concluir tarefas neste projeto, publique no Vercel automaticamente e envie o link de produção.
