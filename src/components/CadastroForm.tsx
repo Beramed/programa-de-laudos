@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   autenticar,
   cadastrarMedico,
+  getMasterSessao,
   getSessao,
   type Genero,
   validarSenha,
@@ -17,7 +18,10 @@ export default function CadastroForm() {
   const [nome, setNome] = useState("");
   const [crm, setCrm] = useState("");
   const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [especialidade, setEspecialidade] = useState("");
+  const [rqe, setRqe] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [genero, setGenero] = useState<Genero>("Dr.");
@@ -25,6 +29,10 @@ export default function CadastroForm() {
   const [ok, setOk] = useState("");
 
   useEffect(() => {
+    if (getMasterSessao()) {
+      router.replace("/admin");
+      return;
+    }
     if (getSessao()) router.replace("/laudos");
   }, [router]);
 
@@ -47,7 +55,10 @@ export default function CadastroForm() {
       nome,
       crm,
       email,
+      telefone,
       endereco,
+      especialidade,
+      rqe,
       senha,
       genero,
     });
@@ -77,7 +88,8 @@ export default function CadastroForm() {
 
         <h1 className="auth-title">Cadastro do médico</h1>
         <p className="auth-subtitle">
-          O login de acesso será o número do CRM.
+          O login de acesso será o número do CRM. O RQE é opcional e, quando
+          informado, aparece na assinatura do laudo.
         </p>
 
         <form className="auth-form register-grid" onSubmit={onSubmit} noValidate>
@@ -136,6 +148,36 @@ export default function CadastroForm() {
             />
           </label>
 
+          <label className="field">
+            <span>Telefone</span>
+            <input
+              type="tel"
+              value={telefone}
+              onChange={(ev) => setTelefone(ev.target.value)}
+              placeholder="(00) 00000-0000"
+              required
+            />
+          </label>
+
+          <label className="field">
+            <span>Especialidade médica</span>
+            <input
+              value={especialidade}
+              onChange={(ev) => setEspecialidade(ev.target.value)}
+              placeholder="Ex.: Radiologia / Ultrassonografia"
+              required
+            />
+          </label>
+
+          <label className="field">
+            <span>RQE (opcional)</span>
+            <input
+              value={rqe}
+              onChange={(ev) => setRqe(ev.target.value)}
+              placeholder="Número do RQE, se houver"
+            />
+          </label>
+
           <label className="field full">
             <span>Endereço</span>
             <input
@@ -174,7 +216,8 @@ export default function CadastroForm() {
 
           <p className="auth-hint full">
             A senha deve ter no mínimo 6 e no máximo 18 dígitos, com ao menos
-            uma letra maiúscula, uma minúscula e um número.
+            uma letra maiúscula, uma minúscula e um número. O RQE só entra no
+            laudo se for preenchido.
           </p>
 
           {erro ? <p className="auth-error full">{erro}</p> : null}

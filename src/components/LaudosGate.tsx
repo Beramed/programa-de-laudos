@@ -50,7 +50,9 @@ export default function LaudosGate() {
           </p>
           <p className="medico-crm">
             CRM {medico.crm}
-            {medico.email ? ` · ${medico.email}` : ""}
+            {medico.especialidade ? ` · ${medico.especialidade}` : ""}
+            {medico.rqe ? ` · RQE ${medico.rqe}` : ""}
+            {medico.telefone ? ` · ${medico.telefone}` : ""}
           </p>
         </div>
         <button type="button" className="btn ghost small" onClick={sair}>

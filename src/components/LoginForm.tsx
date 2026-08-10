@@ -4,7 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { autenticar, getSessao } from "@/lib/auth";
+import {
+  autenticar,
+  getMasterSessao,
+  getSessao,
+  isMasterLogin,
+} from "@/lib/auth";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -14,6 +19,10 @@ export default function LoginForm() {
   const [mostrar, setMostrar] = useState(false);
 
   useEffect(() => {
+    if (getMasterSessao()) {
+      router.replace("/admin");
+      return;
+    }
     if (getSessao()) router.replace("/laudos");
   }, [router]);
 
@@ -21,7 +30,7 @@ export default function LoginForm() {
     e.preventDefault();
     setErro("");
     if (!crm.trim()) {
-      setErro("Informe o CRM.");
+      setErro("Informe o CRM ou o usuário master.");
       return;
     }
     if (!senha) {
@@ -31,6 +40,10 @@ export default function LoginForm() {
     const falha = autenticar(crm, senha);
     if (falha) {
       setErro(falha);
+      return;
+    }
+    if (isMasterLogin(crm, senha)) {
+      router.push("/admin");
       return;
     }
     router.push("/laudos");
@@ -65,7 +78,6 @@ export default function LoginForm() {
             </span>
             <input
               type="text"
-              inputMode="numeric"
               autoComplete="username"
               placeholder="CRM (login)"
               value={crm}
@@ -99,8 +111,6 @@ export default function LoginForm() {
               placeholder="Senha"
               value={senha}
               onChange={(ev) => setSenha(ev.target.value)}
-              minLength={6}
-              maxLength={18}
             />
             <button
               type="button"
@@ -113,7 +123,7 @@ export default function LoginForm() {
           </label>
 
           <p className="auth-hint">
-            Senha: 6–18 caracteres, com maiúscula, minúscula e número.
+            Senha do médico: 6–18 caracteres, com maiúscula, minúscula e número.
           </p>
 
           {erro ? <p className="auth-error">{erro}</p> : null}

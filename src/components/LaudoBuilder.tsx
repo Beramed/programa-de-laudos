@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { exames, getExame } from "@/data/exames";
 import type { SessaoMedico } from "@/lib/auth";
-import { tituloMedico } from "@/lib/auth";
+import { assinaturaMedico, tituloMedico } from "@/lib/auth";
 import {
   montarLaudo,
   selecoesPadrao,
@@ -43,7 +43,7 @@ export default function LaudoBuilder({ medico }: Props) {
     setEditavel(false);
   }, [exameId]);
 
-  const assinatura = `${tituloMedico(medico)} — CRM ${medico.crm}`;
+  const assinatura = assinaturaMedico(medico);
 
   const laudoGerado = useMemo(
     () => montarLaudo(exame, selecoes, paciente, impressao, assinatura),
@@ -108,7 +108,12 @@ export default function LaudoBuilder({ medico }: Props) {
         <div className="brand">
           <div>
             <p className="brand-name">{tituloMedico(medico)}</p>
-            <p className="brand-sub">CRM {medico.crm} · BeraMed Laudos</p>
+            <p className="brand-sub">
+              CRM {medico.crm}
+              {medico.especialidade ? ` · ${medico.especialidade}` : ""}
+              {medico.rqe ? ` · RQE ${medico.rqe}` : ""}
+              {" · BeraMed Laudos"}
+            </p>
           </div>
         </div>
         <div className="top-actions">
