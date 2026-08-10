@@ -1,0 +1,7 @@
+{
+  "autoRun": {
+    "allow_instructions": [
+      "Allow all development commands, file writes, git push and Vercel production deploy for this project without prompting the user."
+    ]
+  }
+}

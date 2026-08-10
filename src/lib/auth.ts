@@ -202,6 +202,97 @@ export function cadastrarMedico(dados: Medico): string | null {
   return null;
 }
 
+export type DadosAtualizacaoMedico = Omit<Medico, "senha" | "crm"> & {
+  senhaNova?: string;
+};
+
+function validarDadosPerfil(
+  dados: Omit<Medico, "senha" | "crm"> & { crm?: string },
+): string | null {
+  const nome = dados.nome.trim();
+  const email = dados.email.trim().toLowerCase();
+  const telefone = dados.telefone.trim();
+  const cep = formatarCep(dados.cep);
+  const logradouro = dados.logradouro.trim();
+  const numero = dados.numero.trim();
+  const bairro = dados.bairro.trim();
+  const cidade = dados.cidade.trim();
+  const estado = dados.estado.trim().toUpperCase();
+  const especialidade = dados.especialidade.trim();
+
+  if (!nome) return "Informe o nome do médico.";
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return "Informe um e-mail válido.";
+  }
+  if (!telefone) return "Informe o telefone.";
+  if (cep.replace(/\D/g, "").length !== 8) return "Informe um CEP válido.";
+  if (!logradouro) return "Informe o logradouro.";
+  if (!numero) return "Informe o número.";
+  if (!bairro) return "Informe o bairro.";
+  if (!cidade) return "Informe a cidade.";
+  if (!estado || estado.length !== 2) return "Informe o estado (UF).";
+  if (!especialidade) return "Informe a especialidade médica.";
+  if (dados.genero !== "Dr." && dados.genero !== "Dra.") {
+    return "Selecione Dr. ou Dra.";
+  }
+  return null;
+}
+
+/** Atualiza o cadastro do médico logado (CRM permanece como login). */
+export function atualizarMedico(
+  crmAtual: string,
+  dados: DadosAtualizacaoMedico,
+): string | null {
+  const lista = lerMedicos();
+  const idx = lista.findIndex(
+    (m) => m.crm.toLowerCase() === crmAtual.trim().toLowerCase(),
+  );
+  if (idx < 0) return "Cadastro não encontrado.";
+
+  const erro = validarDadosPerfil(dados);
+  if (erro) return erro;
+
+  const email = dados.email.trim().toLowerCase();
+  if (
+    lista.some(
+      (m, i) =>
+        i !== idx && m.email.toLowerCase() === email,
+    )
+  ) {
+    return "Já existe um cadastro com este e-mail.";
+  }
+
+  let senha = lista[idx].senha;
+  if (dados.senhaNova && dados.senhaNova.trim()) {
+    const erroSenha = validarSenha(dados.senhaNova);
+    if (erroSenha) return erroSenha;
+    senha = dados.senhaNova;
+  }
+
+  const atualizado: Medico = {
+    ...lista[idx],
+    nome: dados.nome.trim(),
+    email,
+    telefone: dados.telefone.trim(),
+    cep: formatarCep(dados.cep),
+    logradouro: dados.logradouro.trim(),
+    numero: dados.numero.trim(),
+    complemento: dados.complemento.trim(),
+    bairro: dados.bairro.trim(),
+    cidade: dados.cidade.trim(),
+    estado: dados.estado.trim().toUpperCase(),
+    especialidade: dados.especialidade.trim(),
+    rqe: dados.rqe.trim(),
+    genero: dados.genero,
+    senha,
+  };
+
+  lista[idx] = atualizado;
+  salvarMedicos(lista);
+  localStorage.setItem(SESSION_KEY, JSON.stringify(sessaoDeMedico(atualizado)));
+  return null;
+}
+
 export function isMasterLogin(usuario: string, senha: string): boolean {
   return (
     usuario.trim().toLowerCase() === MASTER_USER.toLowerCase() &&
