@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   apagarMedico,
+  formatarEndereco,
   getMasterSessao,
   listarMedicos,
   logout,
@@ -115,7 +116,7 @@ export default function AdminPanel() {
                     <br />
                     <span className="muted">{m.email}</span>
                   </td>
-                  <td>{m.endereco || "—"}</td>
+                  <td>{formatarEndereco(m) || "—"}</td>
                   <td>
                     <button
                       type="button"

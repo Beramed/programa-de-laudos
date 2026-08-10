@@ -694,3 +694,21 @@ textarea {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+.endereco-field {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  margin: 0;
+}
+
+.endereco-field legend {
+  padding: 0 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.endereco-grid {
+  margin-top: 4px;
+}

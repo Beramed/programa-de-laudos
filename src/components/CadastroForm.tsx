@@ -7,11 +7,13 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   autenticar,
   cadastrarMedico,
+  formatarCep,
   getMasterSessao,
   getSessao,
   type Genero,
   validarSenha,
 } from "@/lib/auth";
+import { buscarCep } from "@/lib/cep";
 
 export default function CadastroForm() {
   const router = useRouter();
@@ -19,7 +21,13 @@ export default function CadastroForm() {
   const [crm, setCrm] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
-  const [endereco, setEndereco] = useState("");
+  const [cep, setCep] = useState("");
+  const [logradouro, setLogradouro] = useState("");
+  const [numero, setNumero] = useState("");
+  const [complemento, setComplemento] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
   const [especialidade, setEspecialidade] = useState("");
   const [rqe, setRqe] = useState("");
   const [senha, setSenha] = useState("");
@@ -27,6 +35,8 @@ export default function CadastroForm() {
   const [genero, setGenero] = useState<Genero>("Dr.");
   const [erro, setErro] = useState("");
   const [ok, setOk] = useState("");
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  const [msgCep, setMsgCep] = useState("");
 
   useEffect(() => {
     if (getMasterSessao()) {
@@ -35,6 +45,32 @@ export default function CadastroForm() {
     }
     if (getSessao()) router.replace("/laudos");
   }, [router]);
+
+  async function onCepChange(valor: string) {
+    const formatado = formatarCep(valor);
+    setCep(formatado);
+    setMsgCep("");
+
+    const digitos = formatado.replace(/\D/g, "");
+    if (digitos.length !== 8) return;
+
+    setBuscandoCep(true);
+    try {
+      const dados = await buscarCep(digitos);
+      setCep(formatarCep(dados.cep));
+      setLogradouro(dados.logradouro);
+      setBairro(dados.bairro);
+      setCidade(dados.cidade);
+      setEstado(dados.estado);
+      setMsgCep("Endereço preenchido pelo CEP.");
+    } catch (err) {
+      setMsgCep(
+        err instanceof Error ? err.message : "Não foi possível buscar o CEP.",
+      );
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -56,7 +92,13 @@ export default function CadastroForm() {
       crm,
       email,
       telefone,
-      endereco,
+      cep,
+      logradouro,
+      numero,
+      complemento,
+      bairro,
+      cidade,
+      estado,
       especialidade,
       rqe,
       senha,
@@ -88,8 +130,8 @@ export default function CadastroForm() {
 
         <h1 className="auth-title">Cadastro do médico</h1>
         <p className="auth-subtitle">
-          O login de acesso será o número do CRM. O RQE é opcional e, quando
-          informado, aparece na assinatura do laudo.
+          O login de acesso será o número do CRM. Digite o CEP para preencher
+          automaticamente o endereço.
         </p>
 
         <form className="auth-form register-grid" onSubmit={onSubmit} noValidate>
@@ -178,15 +220,96 @@ export default function CadastroForm() {
             />
           </label>
 
-          <label className="field full">
-            <span>Endereço</span>
-            <input
-              value={endereco}
-              onChange={(ev) => setEndereco(ev.target.value)}
-              placeholder="Rua, número, cidade"
-              required
-            />
-          </label>
+          <fieldset className="endereco-field full">
+            <legend>Endereço</legend>
+
+            <div className="register-grid endereco-grid">
+              <label className="field">
+                <span>CEP</span>
+                <input
+                  value={cep}
+                  onChange={(ev) => void onCepChange(ev.target.value)}
+                  placeholder="00000-000"
+                  inputMode="numeric"
+                  required
+                />
+              </label>
+
+              <label className="field">
+                <span>Número</span>
+                <input
+                  value={numero}
+                  onChange={(ev) => setNumero(ev.target.value)}
+                  placeholder="Nº"
+                  required
+                />
+              </label>
+
+              <label className="field full">
+                <span>Logradouro</span>
+                <input
+                  value={logradouro}
+                  onChange={(ev) => setLogradouro(ev.target.value)}
+                  placeholder="Rua / Avenida"
+                  required
+                />
+              </label>
+
+              <label className="field full">
+                <span>Complemento (opcional)</span>
+                <input
+                  value={complemento}
+                  onChange={(ev) => setComplemento(ev.target.value)}
+                  placeholder="Apto, sala, bloco…"
+                />
+              </label>
+
+              <label className="field">
+                <span>Bairro</span>
+                <input
+                  value={bairro}
+                  onChange={(ev) => setBairro(ev.target.value)}
+                  placeholder="Bairro"
+                  required
+                />
+              </label>
+
+              <label className="field">
+                <span>Cidade</span>
+                <input
+                  value={cidade}
+                  onChange={(ev) => setCidade(ev.target.value)}
+                  placeholder="Cidade"
+                  required
+                />
+              </label>
+
+              <label className="field">
+                <span>Estado (UF)</span>
+                <input
+                  value={estado}
+                  onChange={(ev) =>
+                    setEstado(ev.target.value.toUpperCase().slice(0, 2))
+                  }
+                  placeholder="UF"
+                  maxLength={2}
+                  required
+                />
+              </label>
+            </div>
+
+            {buscandoCep ? (
+              <p className="auth-hint">Buscando CEP…</p>
+            ) : msgCep ? (
+              <p className="auth-hint">{msgCep}</p>
+            ) : (
+              <p className="auth-hint">
+                Ao digitar o CEP completo, logradouro, bairro, cidade e estado
+                são preenchidos automaticamente. O complemento é digitado
+                manualmente.
+              </p>
+            )}
+          </fieldset>
 
           <label className="field">
             <span>Senha de acesso</span>

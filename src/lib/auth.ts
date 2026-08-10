@@ -5,7 +5,13 @@ export type Medico = {
   crm: string;
   email: string;
   telefone: string;
-  endereco: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
   especialidade: string;
   rqe: string;
   senha: string;
@@ -42,23 +48,65 @@ export function validarSenha(senha: string): string | null {
   return null;
 }
 
+export function formatarCep(valor: string): string {
+  const digitos = valor.replace(/\D/g, "").slice(0, 8);
+  if (digitos.length <= 5) return digitos;
+  return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
+}
+
+export function formatarEndereco(
+  m: Pick<
+    Medico,
+    | "logradouro"
+    | "numero"
+    | "complemento"
+    | "bairro"
+    | "cidade"
+    | "estado"
+    | "cep"
+  >,
+): string {
+  const linha1 = [m.logradouro, m.numero].filter(Boolean).join(", ");
+  const linha2 = [m.complemento, m.bairro].filter(Boolean).join(" — ");
+  const linha3 = [m.cidade, m.estado].filter(Boolean).join(" / ");
+  const cep = m.cep ? `CEP ${m.cep}` : "";
+  return [linha1, linha2, linha3, cep].filter(Boolean).join(" · ");
+}
+
+function normalizarMedico(m: Partial<Medico> & { endereco?: string }): Medico {
+  return {
+    nome: m.nome ?? "",
+    crm: m.crm ?? "",
+    email: m.email ?? "",
+    telefone: m.telefone ?? "",
+    cep: m.cep ?? "",
+    logradouro: m.logradouro ?? "",
+    numero: m.numero ?? "",
+    complemento: m.complemento ?? "",
+    bairro: m.bairro ?? "",
+    cidade: m.cidade ?? "",
+    estado: m.estado ?? "",
+    especialidade: m.especialidade ?? "",
+    rqe: m.rqe ?? "",
+    senha: m.senha ?? "",
+    genero: (m.genero as Genero) ?? "Dr.",
+  };
+}
+
 function lerMedicos(): Medico[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(USERS_KEY);
     if (!raw) return [];
-    const lista = JSON.parse(raw) as Partial<Medico>[];
-    return lista.map((m) => ({
-      nome: m.nome ?? "",
-      crm: m.crm ?? "",
-      email: m.email ?? "",
-      telefone: m.telefone ?? "",
-      endereco: m.endereco ?? "",
-      especialidade: m.especialidade ?? "",
-      rqe: m.rqe ?? "",
-      senha: m.senha ?? "",
-      genero: (m.genero as Genero) ?? "Dr.",
-    }));
+    const lista = JSON.parse(raw) as Array<Partial<Medico> & { endereco?: string }>;
+    return lista.map((m) => {
+      const n = normalizarMedico(m);
+      // Compatibilidade com cadastros antigos (campo único "endereco")
+      if (!n.logradouro && m.endereco) {
+        n.logradouro = m.endereco;
+      }
+      return n;
+    });
   } catch {
     return [];
   }
@@ -92,7 +140,13 @@ export function cadastrarMedico(dados: Medico): string | null {
   const nome = dados.nome.trim();
   const email = dados.email.trim().toLowerCase();
   const telefone = dados.telefone.trim();
-  const endereco = dados.endereco.trim();
+  const cep = formatarCep(dados.cep);
+  const logradouro = dados.logradouro.trim();
+  const numero = dados.numero.trim();
+  const complemento = dados.complemento.trim();
+  const bairro = dados.bairro.trim();
+  const cidade = dados.cidade.trim();
+  const estado = dados.estado.trim().toUpperCase();
   const especialidade = dados.especialidade.trim();
   const rqe = dados.rqe.trim();
 
@@ -105,7 +159,12 @@ export function cadastrarMedico(dados: Medico): string | null {
     return "Informe um e-mail válido.";
   }
   if (!telefone) return "Informe o telefone.";
-  if (!endereco) return "Informe o endereço.";
+  if (cep.replace(/\D/g, "").length !== 8) return "Informe um CEP válido.";
+  if (!logradouro) return "Informe o logradouro.";
+  if (!numero) return "Informe o número.";
+  if (!bairro) return "Informe o bairro.";
+  if (!cidade) return "Informe a cidade.";
+  if (!estado || estado.length !== 2) return "Informe o estado (UF).";
   if (!especialidade) return "Informe a especialidade médica.";
   if (dados.genero !== "Dr." && dados.genero !== "Dra.") {
     return "Selecione Dr. ou Dra.";
@@ -127,7 +186,13 @@ export function cadastrarMedico(dados: Medico): string | null {
     crm,
     email,
     telefone,
-    endereco,
+    cep,
+    logradouro,
+    numero,
+    complemento,
+    bairro,
+    cidade,
+    estado,
     especialidade,
     rqe,
     senha: dados.senha,
@@ -165,6 +230,25 @@ export function getMasterSessao(): SessaoMaster | null {
   }
 }
 
+function sessaoDeMedico(medico: Medico): SessaoMedico {
+  return {
+    nome: medico.nome,
+    crm: medico.crm,
+    email: medico.email,
+    telefone: medico.telefone,
+    cep: medico.cep,
+    logradouro: medico.logradouro,
+    numero: medico.numero,
+    complemento: medico.complemento,
+    bairro: medico.bairro,
+    cidade: medico.cidade,
+    estado: medico.estado,
+    especialidade: medico.especialidade,
+    rqe: medico.rqe,
+    genero: medico.genero,
+  };
+}
+
 export function autenticar(crm: string, senha: string): string | null {
   if (isMasterLogin(crm, senha)) {
     return autenticarMaster(crm, senha);
@@ -177,17 +261,7 @@ export function autenticar(crm: string, senha: string): string | null {
   if (!medico || medico.senha !== senha) {
     return "CRM ou senha inválidos.";
   }
-  const sessao: SessaoMedico = {
-    nome: medico.nome,
-    crm: medico.crm,
-    email: medico.email,
-    telefone: medico.telefone,
-    endereco: medico.endereco,
-    especialidade: medico.especialidade,
-    rqe: medico.rqe,
-    genero: medico.genero,
-  };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(sessao));
+  localStorage.setItem(SESSION_KEY, JSON.stringify(sessaoDeMedico(medico)));
   localStorage.removeItem(MASTER_SESSION_KEY);
   return null;
 }
@@ -197,17 +271,10 @@ export function getSessao(): SessaoMedico | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
-    const s = JSON.parse(raw) as Partial<SessaoMedico>;
-    return {
-      nome: s.nome ?? "",
-      crm: s.crm ?? "",
-      email: s.email ?? "",
-      telefone: s.telefone ?? "",
-      endereco: s.endereco ?? "",
-      especialidade: s.especialidade ?? "",
-      rqe: s.rqe ?? "",
-      genero: (s.genero as Genero) ?? "Dr.",
-    };
+    const { senha: _s, ...rest } = normalizarMedico(
+      JSON.parse(raw) as Partial<Medico>,
+    );
+    return rest;
   } catch {
     return null;
   }
