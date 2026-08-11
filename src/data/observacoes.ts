@@ -157,15 +157,25 @@ export function observacoesDoExame(exameId: string): Observacao[] {
   const especificas = observacoesPorExame[exameId] ?? [];
   const ids = new Set(especificas.map((o) => o.id));
   const gerais = observacoesGerais.filter((o) => !ids.has(o.id));
-  return [...especificas, ...gerais];
+  const todas = [...especificas, ...gerais];
+  // "Exames anteriores não disponíveis..." sempre no topo das observações
+  const semAnt = todas.find((o) => o.id === "sem-anteriores");
+  const resto = todas.filter((o) => o.id !== "sem-anteriores");
+  return semAnt ? [semAnt, ...resto] : resto;
 }
 
-export const modalidadesBase = ["USG", "Tomografia", "Ressonância"] as const;
-export const modalidadeMama = "Mamografia";
+export const modalidadesCorrelacao = [
+  "ultrassonografia",
+  "mamografia",
+  "tomografia computadorizada",
+  "ressonância magnética",
+] as const;
 
-export function modalidadesDoExame(exameId: string): string[] {
-  if (exameId === "mamas") {
-    return [...modalidadesBase, modalidadeMama];
-  }
-  return [...modalidadesBase];
+export type ModalidadeCorrelacao = (typeof modalidadesCorrelacao)[number];
+
+export function fraseExameCorrelacionado(
+  modalidade: string,
+  data: string,
+): string {
+  return `Exame correlacionado com ${modalidade} de ${data}.`;
 }

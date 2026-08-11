@@ -417,6 +417,74 @@ textarea {
   gap: 8px;
 }
 
+.correlacao-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: default;
+}
+
+.correlacao-label {
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.correlacao-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.correlacao-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.correlacao-select {
+  flex: 1 1 220px;
+  min-width: 180px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.correlacao-de {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.correlacao-data {
+  width: 120px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.btn-plus {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--teal);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.btn-plus:hover {
+  background: var(--teal-deep);
+}
+
 .preview-edit {
   resize: vertical;
 }

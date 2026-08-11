@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { exames, getExame } from "@/data/exames";
 import {
-  modalidadesDoExame,
+  modalidadesCorrelacao,
   observacoesDoExame,
 } from "@/data/observacoes";
 import type { SessaoMedico } from "@/lib/auth";
@@ -47,7 +47,6 @@ export default function LaudoBuilder({ medico }: Props) {
   ]);
 
   const listaObs = useMemo(() => observacoesDoExame(exameId), [exameId]);
-  const modalidades = useMemo(() => modalidadesDoExame(exameId), [exameId]);
 
   useEffect(() => {
     const e = getExame(exameId);
@@ -99,28 +98,9 @@ export default function LaudoBuilder({ medico }: Props) {
     setEditavel(false);
   }
 
-  function atualizarAnterior(
-    id: string,
-    patch: Partial<ExameAnterior>,
-  ) {
+  function atualizarAnterior(id: string, patch: Partial<ExameAnterior>) {
     setExamesAnteriores((prev) =>
       prev.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-    );
-    setEditavel(false);
-  }
-
-  function toggleModalidade(id: string, mod: string) {
-    setExamesAnteriores((prev) =>
-      prev.map((e) => {
-        if (e.id !== id) return e;
-        const tem = e.modalidades.includes(mod);
-        return {
-          ...e,
-          modalidades: tem
-            ? e.modalidades.filter((m) => m !== mod)
-            : [...e.modalidades, mod],
-        };
-      }),
     );
     setEditavel(false);
   }
@@ -178,6 +158,23 @@ export default function LaudoBuilder({ medico }: Props) {
     setExamesAnteriores([novoExameAnterior()]);
     setEditavel(false);
   }
+
+  function renderObsItem(obs: (typeof listaObs)[number]) {
+    const on = observacoesIds.includes(obs.id);
+    return (
+      <label key={obs.id} className={`obs-item ${on ? "on" : ""}`}>
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={() => toggleObs(obs.id)}
+        />
+        <span>{obs.texto}</span>
+      </label>
+    );
+  }
+
+  const obsSemAnteriores = listaObs.find((o) => o.id === "sem-anteriores");
+  const obsRestantes = listaObs.filter((o) => o.id !== "sem-anteriores");
 
   return (
     <div className="builder">
@@ -299,91 +296,85 @@ export default function LaudoBuilder({ medico }: Props) {
               </button>
             </div>
             <p className="hint">
-              Marque individualmente ou todas de uma vez. Aparecem após a
-              impressão diagnóstica.
+              Marque individualmente ou todas. O item de correlação com exame
+              anterior fica logo abaixo de “exames anteriores não disponíveis”.
             </p>
             <div className="obs-list">
-              {listaObs.map((obs) => {
-                const on = observacoesIds.includes(obs.id);
-                return (
-                  <label key={obs.id} className={`obs-item ${on ? "on" : ""}`}>
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      onChange={() => toggleObs(obs.id)}
-                    />
-                    <span>{obs.texto}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
+              {obsSemAnteriores ? renderObsItem(obsSemAnteriores) : null}
 
-          <div className="obs-block">
-            <div className="obs-head">
-              <h2 className="panel-title">Exames anteriores</h2>
-              <button
-                type="button"
-                className="btn secondary small"
-                onClick={() => {
-                  setExamesAnteriores((prev) => [...prev, novoExameAnterior()]);
-                  setEditavel(false);
-                }}
-              >
-                + Adicionar exame
-              </button>
-            </div>
-            <p className="hint">
-              Informe a data e marque USG, Tomografia e Ressonância
-              {exameId === "mamas" ? " (e Mamografia neste exame)" : ""}.
-            </p>
-
-            <div className="anteriores-list">
-              {examesAnteriores.map((ant, idx) => (
-                <div key={ant.id} className="anterior-card">
-                  <div className="anterior-top">
-                    <label className="field">
-                      <span>Data do exame {idx + 1}</span>
+              <div className="obs-item correlacao-item">
+                <div className="correlacao-label">
+                  Exame correlacionado com
+                </div>
+                <div className="correlacao-rows">
+                  {examesAnteriores.map((ant, idx) => (
+                    <div key={ant.id} className="correlacao-row">
+                      <select
+                        className="correlacao-select"
+                        value={ant.modalidade}
+                        onChange={(ev) =>
+                          atualizarAnterior(ant.id, {
+                            modalidade: ev.target.value,
+                          })
+                        }
+                        aria-label={`Modalidade do exame correlacionado ${idx + 1}`}
+                      >
+                        <option value="">
+                          ultrassonografia / mamografia / tomografia
+                          computadorizada / ressonância magnética
+                        </option>
+                        {modalidadesCorrelacao.map((mod) => (
+                          <option key={mod} value={mod}>
+                            {mod}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="correlacao-de">de</span>
                       <input
+                        className="correlacao-data"
                         value={ant.data}
                         onChange={(ev) =>
                           atualizarAnterior(ant.id, { data: ev.target.value })
                         }
-                        placeholder="dd/mm/aaaa"
+                        placeholder="__/__/____"
+                        aria-label={`Data do exame correlacionado ${idx + 1}`}
                       />
-                    </label>
-                    {examesAnteriores.length > 1 ? (
-                      <button
-                        type="button"
-                        className="btn ghost small"
-                        onClick={() => {
-                          setExamesAnteriores((prev) =>
-                            prev.filter((e) => e.id !== ant.id),
-                          );
-                          setEditavel(false);
-                        }}
-                      >
-                        Remover
-                      </button>
-                    ) : null}
-                  </div>
-                  <div className="mod-chips">
-                    {modalidades.map((mod) => {
-                      const on = ant.modalidades.includes(mod);
-                      return (
+                      {idx === examesAnteriores.length - 1 ? (
                         <button
-                          key={mod}
                           type="button"
-                          className={`chip ${on ? "on" : ""}`}
-                          onClick={() => toggleModalidade(ant.id, mod)}
+                          className="btn-plus"
+                          title="Adicionar exame e data"
+                          aria-label="Adicionar exame e data"
+                          onClick={() => {
+                            setExamesAnteriores((prev) => [
+                              ...prev,
+                              novoExameAnterior(),
+                            ]);
+                            setEditavel(false);
+                          }}
                         >
-                          {mod}
+                          +
                         </button>
-                      );
-                    })}
-                  </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn ghost small"
+                          onClick={() => {
+                            setExamesAnteriores((prev) =>
+                              prev.filter((e) => e.id !== ant.id),
+                            );
+                            setEditavel(false);
+                          }}
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {obsRestantes.map((obs) => renderObsItem(obs))}
             </div>
           </div>
         </section>

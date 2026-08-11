@@ -1,5 +1,8 @@
 import type { Exame } from "@/data/exames";
-import { observacoesDoExame } from "@/data/observacoes";
+import {
+  fraseExameCorrelacionado,
+  observacoesDoExame,
+} from "@/data/observacoes";
 
 export type Selecoes = Record<string, string | string[]>;
 
@@ -14,7 +17,7 @@ export type DadosPaciente = {
 export type ExameAnterior = {
   id: string;
   data: string;
-  modalidades: string[];
+  modalidade: string;
 };
 
 export type ExtrasLaudo = {
@@ -40,7 +43,7 @@ export function novoExameAnterior(): ExameAnterior {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     data: "",
-    modalidades: [],
+    modalidade: "",
   };
 }
 
@@ -120,33 +123,32 @@ export function montarLaudo(
   linhas.push("");
 
   const obsCatalogo = observacoesDoExame(exame.id);
-  const obsSelecionadas = (extras?.observacoesIds ?? [])
-    .map((id) => obsCatalogo.find((o) => o.id === id)?.texto)
-    .filter((t): t is string => Boolean(t?.trim()));
-
-  if (obsSelecionadas.length > 0) {
-    linhas.push("**OBSERVAÇÕES**");
-    linhas.push("");
-    for (const obs of obsSelecionadas) {
-      linhas.push(`• ${obs}`);
-      linhas.push("");
-    }
-  }
-
-  const anteriores = (extras?.examesAnteriores ?? []).filter(
-    (e) => e.data.trim() || e.modalidades.length > 0,
+  const ids = extras?.observacoesIds ?? [];
+  const correlacoes = (extras?.examesAnteriores ?? []).filter(
+    (e) => e.modalidade.trim() && e.data.trim(),
   );
 
-  if (anteriores.length > 0) {
-    linhas.push("**EXAMES ANTERIORES**");
+  const frasesObs: string[] = [];
+  const semAnt = obsCatalogo.find((o) => o.id === "sem-anteriores");
+  if (semAnt && ids.includes("sem-anteriores")) {
+    frasesObs.push(semAnt.texto);
+  }
+  for (const c of correlacoes) {
+    frasesObs.push(
+      fraseExameCorrelacionado(c.modalidade.trim(), c.data.trim()),
+    );
+  }
+  for (const obs of obsCatalogo) {
+    if (obs.id === "sem-anteriores") continue;
+    if (!ids.includes(obs.id)) continue;
+    frasesObs.push(obs.texto);
+  }
+
+  if (frasesObs.length > 0) {
+    linhas.push("**OBSERVAÇÕES**");
     linhas.push("");
-    for (const ant of anteriores) {
-      const mods =
-        ant.modalidades.length > 0
-          ? ant.modalidades.join(", ")
-          : "modalidade não informada";
-      const data = ant.data.trim() || "data não informada";
-      linhas.push(`• ${data} — ${mods}`);
+    for (const obs of frasesObs) {
+      linhas.push(`• ${obs}`);
       linhas.push("");
     }
   }
