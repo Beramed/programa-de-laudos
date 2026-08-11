@@ -90,8 +90,8 @@ export default function PerfilAssinaturaLocais({
       <fieldset className="endereco-field full">
         <legend>Local de realização dos exames</legend>
         <p className="auth-hint">
-          Grave o nome do local (ex.: Santa Imagem Diagnósticos). Ele aparece à
-          direita no rodapé do laudo. Use o X para apagar.
+          Grave o nome do local onde realiza os exames. Ele aparece à direita
+          no rodapé do laudo (em itálico). Use o X para apagar.
         </p>
         <div className="local-add-row">
           <input

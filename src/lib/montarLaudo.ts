@@ -67,7 +67,7 @@ function escaparHtml(texto: string): string {
 function montarRodapeHtml(medico: SessaoMedico): string {
   const nome = escaparHtml(tituloMedico(medico));
   const crm = escaparHtml(`CRM ${medico.crm}`);
-  const local = escaparHtml((medico.localAtivo || "").trim());
+  const local = escaparHtml((medico.localAtivo || "").trim().toUpperCase());
   const disclaimer = escaparHtml(`“${DISCLAIMER_IMPRESSAO}”`);
   const img = medico.assinaturaJpg
     ? `<img class="laudo-assinatura-img" src="${medico.assinaturaJpg}" alt="Assinatura" />`
@@ -83,7 +83,7 @@ function montarRodapeHtml(medico: SessaoMedico): string {
       <div class="laudo-crm">${crm}</div>
     </div>
     <div class="laudo-rodape-dir">
-      ${local ? `<div class="laudo-local">${local}</div>` : ""}
+      ${local ? `<div class="laudo-local">${local}</div>` : "&nbsp;"}
     </div>
   </div>
   <p class="laudo-disclaimer">${disclaimer}</p>

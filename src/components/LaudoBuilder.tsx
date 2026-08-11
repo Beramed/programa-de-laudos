@@ -140,17 +140,17 @@ export default function LaudoBuilder({ medico }: Props) {
       <style>
         body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.55;color:#1a1a1a}
         strong{font-weight:700}
-        .laudo-rodape-v2{margin-top:22px}
-        .laudo-rodape-cols{display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
-        .laudo-rodape-esq{flex:1;text-align:center;max-width:280px}
-        .laudo-rodape-dir{flex:1;text-align:right;padding-bottom:8px}
-        .laudo-assinatura-img{max-width:220px;max-height:70px;object-fit:contain;display:block;margin:0 auto 4px}
-        .laudo-assinatura-espaco{height:48px}
-        .laudo-linha-assinatura{border-top:1px solid #333;margin:0 auto 8px;width:90%}
-        .laudo-nome{font-weight:700;font-size:1rem}
-        .laudo-crm{font-size:0.95rem;margin-top:2px}
-        .laudo-local{font-style:italic;font-size:1rem;letter-spacing:0.02em;color:#444;text-transform:uppercase}
-        .laudo-disclaimer{margin:28px auto 0;max-width:36em;text-align:center;font-size:0.72rem;color:#555;font-style:italic;line-height:1.35}
+        .laudo-rodape-v2{margin-top:28px;font-family:Georgia,"Times New Roman",Times,serif;color:#4a4a4a}
+        .laudo-rodape-cols{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;padding:0 4px}
+        .laudo-rodape-esq{flex:0 1 240px;text-align:center}
+        .laudo-rodape-dir{flex:1;text-align:right;padding-bottom:18px}
+        .laudo-assinatura-img{max-width:180px;max-height:52px;object-fit:contain;display:block;margin:0 auto 2px;filter:grayscale(1);opacity:0.75}
+        .laudo-assinatura-espaco{height:40px}
+        .laudo-linha-assinatura{border-top:1px solid #6a6a6a;margin:0 auto 6px;width:92%}
+        .laudo-nome{font-weight:700;font-size:0.78rem;line-height:1.25;letter-spacing:0.01em;color:#3f3f3f}
+        .laudo-crm{font-size:0.72rem;margin-top:2px;font-weight:600;color:#4a4a4a}
+        .laudo-local{font-style:italic;font-size:0.78rem;letter-spacing:0.04em;color:#6b6b6b;text-transform:uppercase;font-weight:500}
+        .laudo-disclaimer{margin:34px auto 0;max-width:38em;text-align:center;font-size:0.62rem;color:#6a6a6a;font-style:italic;line-height:1.35}
         @media print{body{margin:0}}
       </style></head><body>${laudoParaHtml(textoFinal, medico)}</body></html>`);
     w.document.close();

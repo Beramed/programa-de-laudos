@@ -772,70 +772,80 @@ textarea {
 }
 
 .preview-html .laudo-rodape-v2 {
-  margin-top: 22px;
+  margin-top: 28px;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  color: #4a4a4a;
 }
 
 .preview-html .laudo-rodape-cols {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 24px;
+  gap: 32px;
+  padding: 0 4px;
 }
 
 .preview-html .laudo-rodape-esq {
-  flex: 1;
+  flex: 0 1 240px;
   text-align: center;
-  max-width: 280px;
 }
 
 .preview-html .laudo-rodape-dir {
   flex: 1;
   text-align: right;
-  padding-bottom: 8px;
+  padding-bottom: 18px;
 }
 
 .preview-html .laudo-assinatura-img {
-  max-width: 220px;
-  max-height: 70px;
+  max-width: 180px;
+  max-height: 52px;
   object-fit: contain;
   display: block;
-  margin: 0 auto 4px;
+  margin: 0 auto 2px;
+  filter: grayscale(1);
+  opacity: 0.75;
 }
 
 .preview-html .laudo-assinatura-espaco {
-  height: 48px;
+  height: 40px;
 }
 
 .preview-html .laudo-linha-assinatura {
-  border-top: 1px solid #333;
-  margin: 0 auto 8px;
-  width: 90%;
+  border-top: 1px solid #6a6a6a;
+  margin: 0 auto 6px;
+  width: 92%;
 }
 
 .preview-html .laudo-nome {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  color: #3f3f3f;
 }
 
 .preview-html .laudo-crm {
-  font-size: 0.95rem;
+  font-size: 0.72rem;
   margin-top: 2px;
+  font-weight: 600;
+  color: #4a4a4a;
 }
 
 .preview-html .laudo-local {
   font-style: italic;
-  font-size: 1rem;
-  letter-spacing: 0.02em;
-  color: #444;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: #6b6b6b;
   text-transform: uppercase;
+  font-weight: 500;
 }
 
 .preview-html .laudo-disclaimer {
-  margin: 28px auto 0;
-  max-width: 36em;
+  margin: 34px auto 0;
+  max-width: 38em;
   text-align: center;
-  font-size: 0.72rem;
-  color: #555;
+  font-size: 0.62rem;
+  color: #6a6a6a;
   font-style: italic;
   line-height: 1.35;
 }
