@@ -319,10 +319,7 @@ export default function LaudoBuilder({ medico }: Props) {
                         }
                         aria-label={`Modalidade do exame correlacionado ${idx + 1}`}
                       >
-                        <option value="">
-                          ultrassonografia / mamografia / tomografia
-                          computadorizada / ressonância magnética
-                        </option>
+                        <option value="">Selecionar exame…</option>
                         {modalidadesCorrelacao.map((mod) => (
                           <option key={mod} value={mod}>
                             {mod}

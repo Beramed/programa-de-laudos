@@ -177,5 +177,15 @@ export function fraseExameCorrelacionado(
   modalidade: string,
   data: string,
 ): string {
-  return `Exame correlacionado com ${modalidade} de ${data}.`;
+  return `${modalidade} de ${data}`;
+}
+
+export function frasesExamesCorrelacionados(
+  itens: Array<{ modalidade: string; data: string }>,
+): string | null {
+  const partes = itens
+    .filter((i) => i.modalidade.trim() && i.data.trim())
+    .map((i) => fraseExameCorrelacionado(i.modalidade.trim(), i.data.trim()));
+  if (partes.length === 0) return null;
+  return `Exame correlacionado com ${partes.join(", ")}.`;
 }

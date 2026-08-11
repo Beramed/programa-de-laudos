@@ -1,6 +1,6 @@
 import type { Exame } from "@/data/exames";
 import {
-  fraseExameCorrelacionado,
+  frasesExamesCorrelacionados,
   observacoesDoExame,
 } from "@/data/observacoes";
 
@@ -133,10 +133,9 @@ export function montarLaudo(
   if (semAnt && ids.includes("sem-anteriores")) {
     frasesObs.push(semAnt.texto);
   }
-  for (const c of correlacoes) {
-    frasesObs.push(
-      fraseExameCorrelacionado(c.modalidade.trim(), c.data.trim()),
-    );
+  const fraseCorr = frasesExamesCorrelacionados(correlacoes);
+  if (fraseCorr) {
+    frasesObs.push(fraseCorr);
   }
   for (const obs of obsCatalogo) {
     if (obs.id === "sem-anteriores") continue;
