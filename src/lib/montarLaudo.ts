@@ -3,6 +3,7 @@ import {
   frasesExamesCorrelacionados,
   observacoesDoExame,
 } from "@/data/observacoes";
+import { DISCLAIMER_IMPRESSAO } from "@/lib/auth";
 
 export type Selecoes = Record<string, string | string[]>;
 
@@ -47,15 +48,52 @@ export function novoExameAnterior(): ExameAnterior {
   };
 }
 
-/** Converte marcadores **texto** em HTML <strong> para preview/impressão */
+/** Converte marcadores **texto** e o bloco de rodapé para HTML */
 export function laudoParaHtml(texto: string): string {
-  const escapado = texto
+  const limpo = texto.replace(/@@RODAPE@@\n?/g, "@@RODAPE@@");
+  const escapado = limpo
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-  return escapado
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\n/g, "<br/>");
+
+  const comNegrito = escapado.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const partes = comNegrito.split("@@RODAPE@@");
+
+  if (partes.length === 1) {
+    return comNegrito.replace(/\n/g, "<br/>");
+  }
+
+  const corpo = partes[0].replace(/\n+$/, "").replace(/\n/g, "<br/>");
+  const rodapeBruto = partes.slice(1).join("").replace(/^\n+/, "");
+  const linhasRodape = rodapeBruto.split("\n").filter((l, i, arr) => {
+    // mantém linhas vazias internas úteis, remove só extras no fim
+    return !(l === "" && i === arr.length - 1);
+  });
+
+  // Última linha não vazia = disclaimer (menor)
+  let ultimoIdx = -1;
+  for (let i = linhasRodape.length - 1; i >= 0; i--) {
+    if (linhasRodape[i].trim()) {
+      ultimoIdx = i;
+      break;
+    }
+  }
+
+  const htmlRodape = linhasRodape
+    .map((l, i) => {
+      if (i === ultimoIdx) {
+        return `<p class="laudo-disclaimer">${l || "&nbsp;"}</p>`;
+      }
+      return l === "" ? "<br/>" : `${l}<br/>`;
+    })
+    .join("");
+
+  return `${corpo}<div class="laudo-rodape">${htmlRodape}</div>`;
+}
+
+/** Texto limpo para área de transferência (sem marcadores internos) */
+export function laudoTextoLimpo(texto: string): string {
+  return texto.replace(/@@RODAPE@@\n?/g, "").replace(/\*\*/g, "");
 }
 
 export function montarLaudo(
@@ -154,7 +192,10 @@ export function montarLaudo(
 
   linhas.push("_______________________________");
   linhas.push("");
+  linhas.push("@@RODAPE@@");
   linhas.push(assinatura?.trim() || "Médico(a) responsável");
+  linhas.push("");
+  linhas.push(`“${DISCLAIMER_IMPRESSAO}”`);
 
   return linhas.join("\n").replace(/\n{3,}/g, "\n\n");
 }

@@ -54,6 +54,19 @@ export function formatarCep(valor: string): string {
   return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
 }
 
+/** Formata digitos como dd/mm/aaaa enquanto digita */
+export function formatarDataBr(valor: string): string {
+  const digitos = valor.replace(/\D/g, "").slice(0, 8);
+  if (digitos.length <= 2) return digitos;
+  if (digitos.length <= 4) {
+    return `${digitos.slice(0, 2)}/${digitos.slice(2)}`;
+  }
+  return `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`;
+}
+
+export const DISCLAIMER_IMPRESSAO =
+  "A impressão diagnóstica em exames de imagem não é absoluta, devendo ser correlacionada com dados clínicos, laboratoriais e outros métodos de imagem complementares.";
+
 export function formatarEndereco(
   m: Pick<
     Medico,
@@ -386,15 +399,15 @@ export function tituloMedico(s: SessaoMedico): string {
 }
 
 export function assinaturaMedico(s: SessaoMedico): string {
-  const partes = [`${tituloMedico(s)} — CRM ${s.crm}`];
+  const linhas = [tituloMedico(s), `CRM ${s.crm}`];
   if (s.especialidade.trim()) {
     let esp = s.especialidade.trim();
     if (s.rqe.trim()) {
       esp += ` — RQE ${s.rqe.trim()}`;
     }
-    partes.push(esp);
+    linhas.push(esp);
   } else if (s.rqe.trim()) {
-    partes.push(`RQE ${s.rqe.trim()}`);
+    linhas.push(`RQE ${s.rqe.trim()}`);
   }
-  return partes.join("\n");
+  return linhas.join("\n");
 }

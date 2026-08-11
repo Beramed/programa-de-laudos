@@ -71,9 +71,11 @@ export default function LaudosGate() {
   return (
     <div className="laudos-shell">
       <div className="medico-banner">
-        <div>
+        <div className="medico-identidade">
           <p className="medico-saudacao">
-            {saudacaoHorario()}, {titulo}
+            <span>
+              {saudacaoHorario()}, {titulo}
+            </span>
             <button
               type="button"
               className="edit-pencil"
@@ -84,12 +86,18 @@ export default function LaudosGate() {
               <IconeLapis />
             </button>
           </p>
-          <p className="medico-crm">
-            CRM {medico.crm}
-            {medico.especialidade ? ` · ${medico.especialidade}` : ""}
-            {medico.rqe ? ` · RQE ${medico.rqe}` : ""}
-            {medico.telefone ? ` · ${medico.telefone}` : ""}
-          </p>
+          <p className="medico-crm">CRM {medico.crm}</p>
+          {(medico.especialidade || medico.rqe || medico.telefone) && (
+            <p className="medico-meta">
+              {[
+                medico.especialidade,
+                medico.rqe ? `RQE ${medico.rqe}` : "",
+                medico.telefone,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
         </div>
         <button type="button" className="btn ghost small" onClick={sair}>
           Sair

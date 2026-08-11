@@ -7,9 +7,10 @@ import {
   observacoesDoExame,
 } from "@/data/observacoes";
 import type { SessaoMedico } from "@/lib/auth";
-import { assinaturaMedico } from "@/lib/auth";
+import { assinaturaMedico, formatarDataBr } from "@/lib/auth";
 import {
   laudoParaHtml,
+  laudoTextoLimpo,
   montarLaudo,
   novoExameAnterior,
   selecoesPadrao,
@@ -107,7 +108,7 @@ export default function LaudoBuilder({ medico }: Props) {
 
   async function copiar() {
     const html = laudoParaHtml(textoFinal);
-    const plain = textoFinal.replace(/\*\*/g, "");
+    const plain = laudoTextoLimpo(textoFinal);
     try {
       const item = new ClipboardItem({
         "text/plain": new Blob([plain], { type: "text/plain" }),
@@ -139,6 +140,8 @@ export default function LaudoBuilder({ medico }: Props) {
       <style>
         body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.55;color:#1a1a1a}
         strong{font-weight:700}
+        .laudo-rodape{margin-top:18px;text-align:center;line-height:1.45}
+        .laudo-disclaimer{margin:12px auto 0;max-width:34em;font-size:0.78rem;color:#444;font-style:italic}
         @media print{body{margin:0}}
       </style></head><body>${laudoParaHtml(textoFinal)}</body></html>`);
     w.document.close();
@@ -331,9 +334,12 @@ export default function LaudoBuilder({ medico }: Props) {
                         className="correlacao-data"
                         value={ant.data}
                         onChange={(ev) =>
-                          atualizarAnterior(ant.id, { data: ev.target.value })
+                          atualizarAnterior(ant.id, {
+                            data: formatarDataBr(ev.target.value),
+                          })
                         }
                         placeholder="__/__/____"
+                        inputMode="numeric"
                         aria-label={`Data do exame correlacionado ${idx + 1}`}
                       />
                       {idx === examesAnteriores.length - 1 ? (
