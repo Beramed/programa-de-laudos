@@ -1,4 +1,5 @@
 import type { Exame } from "@/data/exames";
+import { observacoesDoExame } from "@/data/observacoes";
 
 export type Selecoes = Record<string, string | string[]>;
 
@@ -8,6 +9,17 @@ export type DadosPaciente = {
   data: string;
   solicitante: string;
   indicacao: string;
+};
+
+export type ExameAnterior = {
+  id: string;
+  data: string;
+  modalidades: string[];
+};
+
+export type ExtrasLaudo = {
+  observacoesIds: string[];
+  examesAnteriores: ExameAnterior[];
 };
 
 export function selecoesPadrao(exame: Exame): Selecoes {
@@ -24,12 +36,32 @@ export function selecoesPadrao(exame: Exame): Selecoes {
   return sel;
 }
 
+export function novoExameAnterior(): ExameAnterior {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    data: "",
+    modalidades: [],
+  };
+}
+
+/** Converte marcadores **texto** em HTML <strong> para preview/impressão */
+export function laudoParaHtml(texto: string): string {
+  const escapado = texto
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escapado
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n/g, "<br/>");
+}
+
 export function montarLaudo(
   exame: Exame,
   selecoes: Selecoes,
   paciente: DadosPaciente,
   impressaoCustom?: string,
   assinatura?: string,
+  extras?: ExtrasLaudo,
 ): string {
   const linhas: string[] = [];
 
@@ -54,38 +86,74 @@ export function montarLaudo(
     linhas.push("");
   }
 
-  linhas.push("TÉCNICA:");
+  linhas.push("**TÉCNICA**");
+  linhas.push("");
   linhas.push(exame.tecnica);
   linhas.push("");
-  linhas.push("RELATÓRIO:");
+  linhas.push("**RELATÓRIO**");
+  linhas.push("");
 
   for (const secao of exame.secoes) {
     const valor = selecoes[secao.id];
+    let texto = "";
     if (secao.tipo === "unico") {
       const id = typeof valor === "string" ? valor : "";
       const opcao = secao.opcoes.find((o) => o.id === id);
-      if (opcao?.texto.trim()) {
-        linhas.push(opcao.texto.trim());
-      }
+      texto = opcao?.texto.trim() ?? "";
     } else {
       const ids = Array.isArray(valor) ? valor : [];
-      for (const id of ids) {
-        const opcao = secao.opcoes.find((o) => o.id === id);
-        if (opcao?.texto.trim()) {
-          linhas.push(opcao.texto.trim());
-        }
-      }
+      texto = ids
+        .map((id) => secao.opcoes.find((o) => o.id === id)?.texto.trim() ?? "")
+        .filter(Boolean)
+        .join(" ");
+    }
+    if (!texto) continue;
+    linhas.push(`**${secao.titulo}**`);
+    linhas.push("");
+    linhas.push(texto);
+    linhas.push("");
+  }
+
+  linhas.push("**IMPRESSÃO DIAGNÓSTICA**");
+  linhas.push("");
+  linhas.push((impressaoCustom?.trim() || exame.impressaoPadrao).trim());
+  linhas.push("");
+
+  const obsCatalogo = observacoesDoExame(exame.id);
+  const obsSelecionadas = (extras?.observacoesIds ?? [])
+    .map((id) => obsCatalogo.find((o) => o.id === id)?.texto)
+    .filter((t): t is string => Boolean(t?.trim()));
+
+  if (obsSelecionadas.length > 0) {
+    linhas.push("**OBSERVAÇÕES**");
+    linhas.push("");
+    for (const obs of obsSelecionadas) {
+      linhas.push(`• ${obs}`);
+      linhas.push("");
     }
   }
 
-  linhas.push("");
-  linhas.push("IMPRESSÃO:");
-  linhas.push(
-    (impressaoCustom?.trim() || exame.impressaoPadrao).trim(),
+  const anteriores = (extras?.examesAnteriores ?? []).filter(
+    (e) => e.data.trim() || e.modalidades.length > 0,
   );
-  linhas.push("");
+
+  if (anteriores.length > 0) {
+    linhas.push("**EXAMES ANTERIORES**");
+    linhas.push("");
+    for (const ant of anteriores) {
+      const mods =
+        ant.modalidades.length > 0
+          ? ant.modalidades.join(", ")
+          : "modalidade não informada";
+      const data = ant.data.trim() || "data não informada";
+      linhas.push(`• ${data} — ${mods}`);
+      linhas.push("");
+    }
+  }
+
   linhas.push("_______________________________");
+  linhas.push("");
   linhas.push(assinatura?.trim() || "Médico(a) responsável");
 
-  return linhas.join("\n");
+  return linhas.join("\n").replace(/\n{3,}/g, "\n\n");
 }

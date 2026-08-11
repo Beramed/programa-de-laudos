@@ -2,12 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { exames, getExame } from "@/data/exames";
+import {
+  modalidadesDoExame,
+  observacoesDoExame,
+} from "@/data/observacoes";
 import type { SessaoMedico } from "@/lib/auth";
 import { assinaturaMedico } from "@/lib/auth";
 import {
+  laudoParaHtml,
   montarLaudo,
+  novoExameAnterior,
   selecoesPadrao,
   type DadosPaciente,
+  type ExameAnterior,
   type Selecoes,
 } from "@/lib/montarLaudo";
 
@@ -34,42 +41,112 @@ export default function LaudoBuilder({ medico }: Props) {
   const [copiado, setCopiado] = useState(false);
   const [editavel, setEditavel] = useState(false);
   const [textoEditado, setTextoEditado] = useState("");
+  const [observacoesIds, setObservacoesIds] = useState<string[]>([]);
+  const [examesAnteriores, setExamesAnteriores] = useState<ExameAnterior[]>([
+    novoExameAnterior(),
+  ]);
+
+  const listaObs = useMemo(() => observacoesDoExame(exameId), [exameId]);
+  const modalidades = useMemo(() => modalidadesDoExame(exameId), [exameId]);
 
   useEffect(() => {
     const e = getExame(exameId);
     if (!e) return;
     setSelecoes(selecoesPadrao(e));
     setImpressao(e.impressaoPadrao);
+    setObservacoesIds([]);
+    setExamesAnteriores([novoExameAnterior()]);
     setEditavel(false);
   }, [exameId]);
 
   const assinatura = assinaturaMedico(medico);
 
   const laudoGerado = useMemo(
-    () => montarLaudo(exame, selecoes, paciente, impressao, assinatura),
-    [exame, selecoes, paciente, impressao, assinatura],
+    () =>
+      montarLaudo(exame, selecoes, paciente, impressao, assinatura, {
+        observacoesIds,
+        examesAnteriores,
+      }),
+    [
+      exame,
+      selecoes,
+      paciente,
+      impressao,
+      assinatura,
+      observacoesIds,
+      examesAnteriores,
+    ],
   );
 
   const textoFinal = editavel ? textoEditado : laudoGerado;
+  const todasObsMarcadas =
+    listaObs.length > 0 && listaObs.every((o) => observacoesIds.includes(o.id));
 
   function escolherUnico(secaoId: string, opcaoId: string) {
     setSelecoes((prev) => ({ ...prev, [secaoId]: opcaoId }));
     setEditavel(false);
   }
 
+  function toggleObs(id: string) {
+    setObservacoesIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+    setEditavel(false);
+  }
+
+  function marcarTodasObs() {
+    setObservacoesIds(todasObsMarcadas ? [] : listaObs.map((o) => o.id));
+    setEditavel(false);
+  }
+
+  function atualizarAnterior(
+    id: string,
+    patch: Partial<ExameAnterior>,
+  ) {
+    setExamesAnteriores((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+    );
+    setEditavel(false);
+  }
+
+  function toggleModalidade(id: string, mod: string) {
+    setExamesAnteriores((prev) =>
+      prev.map((e) => {
+        if (e.id !== id) return e;
+        const tem = e.modalidades.includes(mod);
+        return {
+          ...e,
+          modalidades: tem
+            ? e.modalidades.filter((m) => m !== mod)
+            : [...e.modalidades, mod],
+        };
+      }),
+    );
+    setEditavel(false);
+  }
+
   async function copiar() {
+    const html = laudoParaHtml(textoFinal);
+    const plain = textoFinal.replace(/\*\*/g, "");
     try {
-      await navigator.clipboard.writeText(textoFinal);
+      const item = new ClipboardItem({
+        "text/plain": new Blob([plain], { type: "text/plain" }),
+        "text/html": new Blob([html], { type: "text/html" }),
+      });
+      await navigator.clipboard.write([item]);
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     } catch {
-      // fallback
-      const ta = document.createElement("textarea");
-      ta.value = textoFinal;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
+      try {
+        await navigator.clipboard.writeText(plain);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = plain;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     }
@@ -80,12 +157,10 @@ export default function LaudoBuilder({ medico }: Props) {
     if (!w) return;
     w.document.write(`<!DOCTYPE html><html><head><title>Laudo</title>
       <style>
-        body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.55;color:#1a1a1a;white-space:pre-wrap}
+        body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.55;color:#1a1a1a}
+        strong{font-weight:700}
         @media print{body{margin:0}}
-      </style></head><body>${textoFinal
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")}</body></html>`);
+      </style></head><body>${laudoParaHtml(textoFinal)}</body></html>`);
     w.document.close();
     w.focus();
     w.print();
@@ -99,6 +174,8 @@ export default function LaudoBuilder({ medico }: Props) {
   function resetExame() {
     setSelecoes(selecoesPadrao(exame));
     setImpressao(exame.impressaoPadrao);
+    setObservacoesIds([]);
+    setExamesAnteriores([novoExameAnterior()]);
     setEditavel(false);
   }
 
@@ -148,11 +225,11 @@ export default function LaudoBuilder({ medico }: Props) {
           <div className="patient-grid">
             {(
               [
-                ["nome", "Nome", "text"],
-                ["idade", "Idade", "text"],
-                ["data", "Data", "text"],
-                ["solicitante", "Solicitante", "text"],
-                ["indicacao", "Indicação", "text"],
+                ["nome", "Nome"],
+                ["idade", "Idade"],
+                ["data", "Data"],
+                ["solicitante", "Solicitante"],
+                ["indicacao", "Indicação"],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="field">
@@ -171,8 +248,8 @@ export default function LaudoBuilder({ medico }: Props) {
 
           <h2 className="panel-title spaced">Achados — {exame.nome}</h2>
           <p className="hint">
-            Selecione as opções de cada estrutura. O texto do laudo é montado
-            automaticamente à direita.
+            Selecione as opções de cada estrutura. Órgãos saem em negrito no
+            laudo, com linha em branco entre os itens.
           </p>
 
           <div className="sections">
@@ -199,7 +276,7 @@ export default function LaudoBuilder({ medico }: Props) {
           </div>
 
           <label className="field impressao-field">
-            <span>Impressão / conclusão</span>
+            <span>Impressão diagnóstica / conclusão</span>
             <textarea
               rows={3}
               value={impressao}
@@ -209,6 +286,106 @@ export default function LaudoBuilder({ medico }: Props) {
               }}
             />
           </label>
+
+          <div className="obs-block">
+            <div className="obs-head">
+              <h2 className="panel-title">Observações</h2>
+              <button
+                type="button"
+                className="btn ghost small"
+                onClick={marcarTodasObs}
+              >
+                {todasObsMarcadas ? "Desmarcar todas" : "Marcar todas"}
+              </button>
+            </div>
+            <p className="hint">
+              Marque individualmente ou todas de uma vez. Aparecem após a
+              impressão diagnóstica.
+            </p>
+            <div className="obs-list">
+              {listaObs.map((obs) => {
+                const on = observacoesIds.includes(obs.id);
+                return (
+                  <label key={obs.id} className={`obs-item ${on ? "on" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() => toggleObs(obs.id)}
+                    />
+                    <span>{obs.texto}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="obs-block">
+            <div className="obs-head">
+              <h2 className="panel-title">Exames anteriores</h2>
+              <button
+                type="button"
+                className="btn secondary small"
+                onClick={() => {
+                  setExamesAnteriores((prev) => [...prev, novoExameAnterior()]);
+                  setEditavel(false);
+                }}
+              >
+                + Adicionar exame
+              </button>
+            </div>
+            <p className="hint">
+              Informe a data e marque USG, Tomografia e Ressonância
+              {exameId === "mamas" ? " (e Mamografia neste exame)" : ""}.
+            </p>
+
+            <div className="anteriores-list">
+              {examesAnteriores.map((ant, idx) => (
+                <div key={ant.id} className="anterior-card">
+                  <div className="anterior-top">
+                    <label className="field">
+                      <span>Data do exame {idx + 1}</span>
+                      <input
+                        value={ant.data}
+                        onChange={(ev) =>
+                          atualizarAnterior(ant.id, { data: ev.target.value })
+                        }
+                        placeholder="dd/mm/aaaa"
+                      />
+                    </label>
+                    {examesAnteriores.length > 1 ? (
+                      <button
+                        type="button"
+                        className="btn ghost small"
+                        onClick={() => {
+                          setExamesAnteriores((prev) =>
+                            prev.filter((e) => e.id !== ant.id),
+                          );
+                          setEditavel(false);
+                        }}
+                      >
+                        Remover
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="mod-chips">
+                    {modalidades.map((mod) => {
+                      const on = ant.modalidades.includes(mod);
+                      return (
+                        <button
+                          key={mod}
+                          type="button"
+                          className={`chip ${on ? "on" : ""}`}
+                          onClick={() => toggleModalidade(ant.id, mod)}
+                        >
+                          {mod}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="panel preview-panel">
@@ -238,7 +415,10 @@ export default function LaudoBuilder({ medico }: Props) {
               spellCheck
             />
           ) : (
-            <pre className="preview-text">{laudoGerado}</pre>
+            <div
+              className="preview-text preview-html"
+              dangerouslySetInnerHTML={{ __html: laudoParaHtml(laudoGerado) }}
+            />
           )}
         </section>
       </div>

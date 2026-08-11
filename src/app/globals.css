@@ -332,6 +332,91 @@ textarea {
   overflow: auto;
 }
 
+.preview-html {
+  white-space: normal;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.preview-html strong {
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.obs-block {
+  margin-top: 26px;
+}
+
+.obs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.obs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.obs-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.obs-item.on {
+  border-color: #9ec9d8;
+  background: var(--teal-soft);
+}
+
+.obs-item input {
+  margin-top: 2px;
+  accent-color: var(--teal);
+}
+
+.anteriores-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.anterior-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+}
+
+.anterior-top {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.anterior-top .field {
+  flex: 1;
+}
+
+.mod-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .preview-edit {
   resize: vertical;
 }
