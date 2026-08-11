@@ -3,7 +3,11 @@ import {
   frasesExamesCorrelacionados,
   observacoesDoExame,
 } from "@/data/observacoes";
-import { DISCLAIMER_IMPRESSAO } from "@/lib/auth";
+import {
+  DISCLAIMER_IMPRESSAO,
+  tituloMedico,
+  type SessaoMedico,
+} from "@/lib/auth";
 
 export type Selecoes = Record<string, string | string[]>;
 
@@ -24,6 +28,10 @@ export type ExameAnterior = {
 export type ExtrasLaudo = {
   observacoesIds: string[];
   examesAnteriores: ExameAnterior[];
+};
+
+export type RodapeLaudo = {
+  medico: SessaoMedico;
 };
 
 export function selecoesPadrao(exame: Exame): Selecoes {
@@ -48,9 +56,56 @@ export function novoExameAnterior(): ExameAnterior {
   };
 }
 
-/** Converte marcadores **texto** e o bloco de rodapé para HTML */
-export function laudoParaHtml(texto: string): string {
-  const limpo = texto.replace(/@@RODAPE@@\n?/g, "@@RODAPE@@");
+function escaparHtml(texto: string): string {
+  return texto
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function montarRodapeHtml(medico: SessaoMedico): string {
+  const nome = escaparHtml(tituloMedico(medico));
+  const crm = escaparHtml(`CRM ${medico.crm}`);
+  const local = escaparHtml((medico.localAtivo || "").trim());
+  const disclaimer = escaparHtml(`“${DISCLAIMER_IMPRESSAO}”`);
+  const img = medico.assinaturaJpg
+    ? `<img class="laudo-assinatura-img" src="${medico.assinaturaJpg}" alt="Assinatura" />`
+    : `<div class="laudo-assinatura-espaco"></div>`;
+
+  return `
+<div class="laudo-rodape-v2">
+  <div class="laudo-rodape-cols">
+    <div class="laudo-rodape-esq">
+      ${img}
+      <div class="laudo-linha-assinatura"></div>
+      <div class="laudo-nome">${nome}</div>
+      <div class="laudo-crm">${crm}</div>
+    </div>
+    <div class="laudo-rodape-dir">
+      ${local ? `<div class="laudo-local">${local}</div>` : ""}
+    </div>
+  </div>
+  <p class="laudo-disclaimer">${disclaimer}</p>
+</div>`.trim();
+}
+
+function montarRodapeTexto(medico: SessaoMedico): string {
+  const linhas = [
+    tituloMedico(medico),
+    `CRM ${medico.crm}`,
+  ];
+  if (medico.localAtivo.trim()) {
+    linhas.push(medico.localAtivo.trim().toUpperCase());
+  }
+  linhas.push("");
+  linhas.push(`“${DISCLAIMER_IMPRESSAO}”`);
+  return linhas.join("\n");
+}
+
+/** Converte marcadores **texto** e monta rodapé no estilo foto 2 */
+export function laudoParaHtml(texto: string, medico?: SessaoMedico): string {
+  const limpo = texto.replace(/@@RODAPE@@[\s\S]*$/m, "@@RODAPE@@");
   const escapado = limpo
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -58,42 +113,26 @@ export function laudoParaHtml(texto: string): string {
 
   const comNegrito = escapado.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   const partes = comNegrito.split("@@RODAPE@@");
-
-  if (partes.length === 1) {
-    return comNegrito.replace(/\n/g, "<br/>");
-  }
-
   const corpo = partes[0].replace(/\n+$/, "").replace(/\n/g, "<br/>");
-  const rodapeBruto = partes.slice(1).join("").replace(/^\n+/, "");
-  const linhasRodape = rodapeBruto.split("\n").filter((l, i, arr) => {
-    // mantém linhas vazias internas úteis, remove só extras no fim
-    return !(l === "" && i === arr.length - 1);
-  });
 
-  // Última linha não vazia = disclaimer (menor)
-  let ultimoIdx = -1;
-  for (let i = linhasRodape.length - 1; i >= 0; i--) {
-    if (linhasRodape[i].trim()) {
-      ultimoIdx = i;
-      break;
-    }
+  if (!medico) {
+    const rodape = (partes[1] || "")
+      .replace(/^\n+/, "")
+      .replace(/\n/g, "<br/>");
+    return `${corpo}<div class="laudo-rodape">${rodape}</div>`;
   }
 
-  const htmlRodape = linhasRodape
-    .map((l, i) => {
-      if (i === ultimoIdx) {
-        return `<p class="laudo-disclaimer">${l || "&nbsp;"}</p>`;
-      }
-      return l === "" ? "<br/>" : `${l}<br/>`;
-    })
-    .join("");
-
-  return `${corpo}<div class="laudo-rodape">${htmlRodape}</div>`;
+  return `${corpo}${montarRodapeHtml(medico)}`;
 }
 
-/** Texto limpo para área de transferência (sem marcadores internos) */
-export function laudoTextoLimpo(texto: string): string {
-  return texto.replace(/@@RODAPE@@\n?/g, "").replace(/\*\*/g, "");
+export function laudoTextoLimpo(texto: string, medico?: SessaoMedico): string {
+  const base = texto
+    .replace(/@@RODAPE@@[\s\S]*$/m, "")
+    .replace(/\*\*/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trimEnd();
+  if (!medico) return base;
+  return `${base}\n\n_______________________________\n\n${montarRodapeTexto(medico)}`;
 }
 
 export function montarLaudo(
@@ -101,7 +140,7 @@ export function montarLaudo(
   selecoes: Selecoes,
   paciente: DadosPaciente,
   impressaoCustom?: string,
-  assinatura?: string,
+  _assinatura?: string,
   extras?: ExtrasLaudo,
 ): string {
   const linhas: string[] = [];
@@ -193,9 +232,6 @@ export function montarLaudo(
   linhas.push("_______________________________");
   linhas.push("");
   linhas.push("@@RODAPE@@");
-  linhas.push(assinatura?.trim() || "Médico(a) responsável");
-  linhas.push("");
-  linhas.push(`“${DISCLAIMER_IMPRESSAO}”`);
 
   return linhas.join("\n").replace(/\n{3,}/g, "\n\n");
 }

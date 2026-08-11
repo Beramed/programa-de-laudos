@@ -107,8 +107,8 @@ export default function LaudoBuilder({ medico }: Props) {
   }
 
   async function copiar() {
-    const html = laudoParaHtml(textoFinal);
-    const plain = laudoTextoLimpo(textoFinal);
+    const html = laudoParaHtml(textoFinal, medico);
+    const plain = laudoTextoLimpo(textoFinal, medico);
     try {
       const item = new ClipboardItem({
         "text/plain": new Blob([plain], { type: "text/plain" }),
@@ -140,10 +140,19 @@ export default function LaudoBuilder({ medico }: Props) {
       <style>
         body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.55;color:#1a1a1a}
         strong{font-weight:700}
-        .laudo-rodape{margin-top:18px;text-align:center;line-height:1.45}
-        .laudo-disclaimer{margin:12px auto 0;max-width:34em;font-size:0.78rem;color:#444;font-style:italic}
+        .laudo-rodape-v2{margin-top:22px}
+        .laudo-rodape-cols{display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
+        .laudo-rodape-esq{flex:1;text-align:center;max-width:280px}
+        .laudo-rodape-dir{flex:1;text-align:right;padding-bottom:8px}
+        .laudo-assinatura-img{max-width:220px;max-height:70px;object-fit:contain;display:block;margin:0 auto 4px}
+        .laudo-assinatura-espaco{height:48px}
+        .laudo-linha-assinatura{border-top:1px solid #333;margin:0 auto 8px;width:90%}
+        .laudo-nome{font-weight:700;font-size:1rem}
+        .laudo-crm{font-size:0.95rem;margin-top:2px}
+        .laudo-local{font-style:italic;font-size:1rem;letter-spacing:0.02em;color:#444;text-transform:uppercase}
+        .laudo-disclaimer{margin:28px auto 0;max-width:36em;text-align:center;font-size:0.72rem;color:#555;font-style:italic;line-height:1.35}
         @media print{body{margin:0}}
-      </style></head><body>${laudoParaHtml(textoFinal)}</body></html>`);
+      </style></head><body>${laudoParaHtml(textoFinal, medico)}</body></html>`);
     w.document.close();
     w.focus();
     w.print();
@@ -411,7 +420,9 @@ export default function LaudoBuilder({ medico }: Props) {
           ) : (
             <div
               className="preview-text preview-html"
-              dangerouslySetInnerHTML={{ __html: laudoParaHtml(laudoGerado) }}
+              dangerouslySetInnerHTML={{
+                __html: laudoParaHtml(laudoGerado, medico),
+              }}
             />
           )}
         </section>

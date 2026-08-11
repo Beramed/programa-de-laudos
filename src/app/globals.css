@@ -771,20 +771,184 @@ textarea {
   text-align: center;
 }
 
-.preview-html .laudo-rodape {
-  margin-top: 18px;
+.preview-html .laudo-rodape-v2 {
+  margin-top: 22px;
+}
+
+.preview-html .laudo-rodape-cols {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+}
+
+.preview-html .laudo-rodape-esq {
+  flex: 1;
   text-align: center;
-  line-height: 1.45;
+  max-width: 280px;
+}
+
+.preview-html .laudo-rodape-dir {
+  flex: 1;
+  text-align: right;
+  padding-bottom: 8px;
+}
+
+.preview-html .laudo-assinatura-img {
+  max-width: 220px;
+  max-height: 70px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 4px;
+}
+
+.preview-html .laudo-assinatura-espaco {
+  height: 48px;
+}
+
+.preview-html .laudo-linha-assinatura {
+  border-top: 1px solid #333;
+  margin: 0 auto 8px;
+  width: 90%;
+}
+
+.preview-html .laudo-nome {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.preview-html .laudo-crm {
   font-size: 0.95rem;
+  margin-top: 2px;
+}
+
+.preview-html .laudo-local {
+  font-style: italic;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: #444;
+  text-transform: uppercase;
 }
 
 .preview-html .laudo-disclaimer {
-  margin: 12px auto 0;
-  max-width: 34em;
-  font-size: 0.78rem;
+  margin: 28px auto 0;
+  max-width: 36em;
+  text-align: center;
+  font-size: 0.72rem;
   color: #555;
   font-style: italic;
-  line-height: 1.4;
+  line-height: 1.35;
+}
+
+.local-add-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.local-add-row input {
+  flex: 1;
+  min-width: 180px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+}
+
+.locais-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.local-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 0.55rem 0.35rem 0.7rem;
+  background: #fff;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.local-chip.on {
+  background: var(--teal-soft);
+  border-color: #9ec9d8;
+  color: var(--teal-deep);
+}
+
+.local-chip input {
+  accent-color: var(--teal);
+}
+
+.local-x {
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  font-weight: 700;
+}
+
+.assinatura-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.assinatura-box {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff;
+}
+
+.assinatura-preview img {
+  max-width: 100%;
+  max-height: 80px;
+  object-fit: contain;
+  background: #fafafa;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.cert-nome {
+  margin: 0;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .assinatura-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-html .laudo-rodape-cols {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .preview-html .laudo-rodape-dir {
+    text-align: center;
+  }
+
+  .preview-html .laudo-rodape-esq {
+    max-width: none;
+  }
 }
 
 .edit-pencil {

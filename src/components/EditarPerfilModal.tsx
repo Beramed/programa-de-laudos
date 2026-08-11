@@ -6,8 +6,10 @@ import {
   formatarCep,
   type Genero,
   type SessaoMedico,
+  type TipoAssinatura,
 } from "@/lib/auth";
 import { buscarCep } from "@/lib/cep";
+import PerfilAssinaturaLocais from "@/components/PerfilAssinaturaLocais";
 
 type Props = {
   medico: SessaoMedico;
@@ -35,6 +37,15 @@ export default function EditarPerfilModal({
   const [especialidade, setEspecialidade] = useState(medico.especialidade);
   const [rqe, setRqe] = useState(medico.rqe);
   const [genero, setGenero] = useState<Genero>(medico.genero);
+  const [locaisTrabalho, setLocaisTrabalho] = useState(medico.locaisTrabalho ?? []);
+  const [localAtivo, setLocalAtivo] = useState(medico.localAtivo ?? "");
+  const [assinaturaJpg, setAssinaturaJpg] = useState(medico.assinaturaJpg ?? "");
+  const [certificadoNome, setCertificadoNome] = useState(
+    medico.certificadoNome ?? "",
+  );
+  const [tipoAssinatura, setTipoAssinatura] = useState<TipoAssinatura>(
+    medico.tipoAssinatura ?? "",
+  );
   const [senhaNova, setSenhaNova] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [erro, setErro] = useState("");
@@ -56,6 +67,11 @@ export default function EditarPerfilModal({
     setEspecialidade(medico.especialidade);
     setRqe(medico.rqe);
     setGenero(medico.genero);
+    setLocaisTrabalho(medico.locaisTrabalho ?? []);
+    setLocalAtivo(medico.localAtivo ?? "");
+    setAssinaturaJpg(medico.assinaturaJpg ?? "");
+    setCertificadoNome(medico.certificadoNome ?? "");
+    setTipoAssinatura(medico.tipoAssinatura ?? "");
     setSenhaNova("");
     setConfirmar("");
     setErro("");
@@ -114,6 +130,11 @@ export default function EditarPerfilModal({
       especialidade,
       rqe,
       genero,
+      locaisTrabalho,
+      localAtivo,
+      assinaturaJpg,
+      certificadoNome,
+      tipoAssinatura,
       senhaNova: senhaNova.trim() || undefined,
     });
 
@@ -137,6 +158,11 @@ export default function EditarPerfilModal({
       especialidade: especialidade.trim(),
       rqe: rqe.trim(),
       genero,
+      locaisTrabalho,
+      localAtivo,
+      assinaturaJpg,
+      certificadoNome,
+      tipoAssinatura,
     });
     onFechar();
   }
@@ -292,6 +318,25 @@ export default function EditarPerfilModal({
               <p className="auth-hint">{msgCep}</p>
             ) : null}
           </fieldset>
+
+          <PerfilAssinaturaLocais
+            locaisTrabalho={locaisTrabalho}
+            localAtivo={localAtivo}
+            assinaturaJpg={assinaturaJpg}
+            certificadoNome={certificadoNome}
+            tipoAssinatura={tipoAssinatura}
+            onChange={(patch) => {
+              if (patch.locaisTrabalho !== undefined)
+                setLocaisTrabalho(patch.locaisTrabalho);
+              if (patch.localAtivo !== undefined) setLocalAtivo(patch.localAtivo);
+              if (patch.assinaturaJpg !== undefined)
+                setAssinaturaJpg(patch.assinaturaJpg);
+              if (patch.certificadoNome !== undefined)
+                setCertificadoNome(patch.certificadoNome);
+              if (patch.tipoAssinatura !== undefined)
+                setTipoAssinatura(patch.tipoAssinatura);
+            }}
+          />
 
           <label className="field">
             <span>Nova senha (opcional)</span>

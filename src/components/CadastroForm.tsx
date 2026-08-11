@@ -11,9 +11,11 @@ import {
   getMasterSessao,
   getSessao,
   type Genero,
+  type TipoAssinatura,
   validarSenha,
 } from "@/lib/auth";
 import { buscarCep } from "@/lib/cep";
+import PerfilAssinaturaLocais from "@/components/PerfilAssinaturaLocais";
 
 export default function CadastroForm() {
   const router = useRouter();
@@ -33,6 +35,11 @@ export default function CadastroForm() {
   const [senha, setSenha] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [genero, setGenero] = useState<Genero>("Dr.");
+  const [locaisTrabalho, setLocaisTrabalho] = useState<string[]>([]);
+  const [localAtivo, setLocalAtivo] = useState("");
+  const [assinaturaJpg, setAssinaturaJpg] = useState("");
+  const [certificadoNome, setCertificadoNome] = useState("");
+  const [tipoAssinatura, setTipoAssinatura] = useState<TipoAssinatura>("");
   const [erro, setErro] = useState("");
   const [ok, setOk] = useState("");
   const [buscandoCep, setBuscandoCep] = useState(false);
@@ -103,6 +110,11 @@ export default function CadastroForm() {
       rqe,
       senha,
       genero,
+      locaisTrabalho,
+      localAtivo,
+      assinaturaJpg,
+      certificadoNome,
+      tipoAssinatura,
     });
     if (falha) {
       setErro(falha);
@@ -309,6 +321,25 @@ export default function CadastroForm() {
               </p>
             )}
           </fieldset>
+
+          <PerfilAssinaturaLocais
+            locaisTrabalho={locaisTrabalho}
+            localAtivo={localAtivo}
+            assinaturaJpg={assinaturaJpg}
+            certificadoNome={certificadoNome}
+            tipoAssinatura={tipoAssinatura}
+            onChange={(patch) => {
+              if (patch.locaisTrabalho !== undefined)
+                setLocaisTrabalho(patch.locaisTrabalho);
+              if (patch.localAtivo !== undefined) setLocalAtivo(patch.localAtivo);
+              if (patch.assinaturaJpg !== undefined)
+                setAssinaturaJpg(patch.assinaturaJpg);
+              if (patch.certificadoNome !== undefined)
+                setCertificadoNome(patch.certificadoNome);
+              if (patch.tipoAssinatura !== undefined)
+                setTipoAssinatura(patch.tipoAssinatura);
+            }}
+          />
 
           <label className="field">
             <span>Senha de acesso</span>

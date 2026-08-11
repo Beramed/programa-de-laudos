@@ -1,5 +1,7 @@
 export type Genero = "Dr." | "Dra.";
 
+export type TipoAssinatura = "" | "jpg" | "certificado";
+
 export type Medico = {
   nome: string;
   crm: string;
@@ -16,6 +18,15 @@ export type Medico = {
   rqe: string;
   senha: string;
   genero: Genero;
+  /** Locais de atendimento gravados no perfil */
+  locaisTrabalho: string[];
+  /** Local ativo exibido no rodapé do laudo */
+  localAtivo: string;
+  /** Data URL da assinatura JPG */
+  assinaturaJpg: string;
+  /** Nome do arquivo de certificado digital, se houver */
+  certificadoNome: string;
+  tipoAssinatura: TipoAssinatura;
 };
 
 export type SessaoMedico = Omit<Medico, "senha">;
@@ -54,7 +65,6 @@ export function formatarCep(valor: string): string {
   return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
 }
 
-/** Formata digitos como dd/mm/aaaa enquanto digita */
 export function formatarDataBr(valor: string): string {
   const digitos = valor.replace(/\D/g, "").slice(0, 8);
   if (digitos.length <= 2) return digitos;
@@ -86,7 +96,22 @@ export function formatarEndereco(
   return [linha1, linha2, linha3, cep].filter(Boolean).join(" · ");
 }
 
+function normalizarLocais(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((x) => String(x ?? "").trim())
+    .filter(Boolean)
+    .filter((v, i, arr) => arr.findIndex((y) => y.toLowerCase() === v.toLowerCase()) === i);
+}
+
 function normalizarMedico(m: Partial<Medico> & { endereco?: string }): Medico {
+  const locais = normalizarLocais(m.locaisTrabalho);
+  let localAtivo = (m.localAtivo ?? "").trim();
+  if (localAtivo && !locais.some((l) => l.toLowerCase() === localAtivo.toLowerCase())) {
+    locais.push(localAtivo);
+  }
+  if (!localAtivo && locais.length > 0) localAtivo = locais[0];
+
   return {
     nome: m.nome ?? "",
     crm: m.crm ?? "",
@@ -103,6 +128,11 @@ function normalizarMedico(m: Partial<Medico> & { endereco?: string }): Medico {
     rqe: m.rqe ?? "",
     senha: m.senha ?? "",
     genero: (m.genero as Genero) ?? "Dr.",
+    locaisTrabalho: locais,
+    localAtivo,
+    assinaturaJpg: m.assinaturaJpg ?? "",
+    certificadoNome: m.certificadoNome ?? "",
+    tipoAssinatura: (m.tipoAssinatura as TipoAssinatura) ?? "",
   };
 }
 
@@ -114,7 +144,6 @@ function lerMedicos(): Medico[] {
     const lista = JSON.parse(raw) as Array<Partial<Medico> & { endereco?: string }>;
     return lista.map((m) => {
       const n = normalizarMedico(m);
-      // Compatibilidade com cadastros antigos (campo único "endereco")
       if (!n.logradouro && m.endereco) {
         n.logradouro = m.endereco;
       }
@@ -162,6 +191,12 @@ export function cadastrarMedico(dados: Medico): string | null {
   const estado = dados.estado.trim().toUpperCase();
   const especialidade = dados.especialidade.trim();
   const rqe = dados.rqe.trim();
+  const locaisTrabalho = normalizarLocais(dados.locaisTrabalho);
+  let localAtivo = (dados.localAtivo || "").trim();
+  if (localAtivo && !locaisTrabalho.some((l) => l.toLowerCase() === localAtivo.toLowerCase())) {
+    locaisTrabalho.push(localAtivo);
+  }
+  if (!localAtivo && locaisTrabalho[0]) localAtivo = locaisTrabalho[0];
 
   if (!nome) return "Informe o nome do médico.";
   if (!crm) return "Informe o CRM.";
@@ -209,6 +244,11 @@ export function cadastrarMedico(dados: Medico): string | null {
     rqe,
     senha: dados.senha,
     genero: dados.genero,
+    locaisTrabalho,
+    localAtivo,
+    assinaturaJpg: dados.assinaturaJpg ?? "",
+    certificadoNome: dados.certificadoNome ?? "",
+    tipoAssinatura: dados.tipoAssinatura ?? "",
   });
   salvarMedicos(lista);
   return null;
@@ -230,7 +270,6 @@ function validarDadosPerfil(
   const bairro = dados.bairro.trim();
   const cidade = dados.cidade.trim();
   const estado = dados.estado.trim().toUpperCase();
-  const especialidade = dados.especialidade.trim();
 
   if (!nome) return "Informe o nome do médico.";
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -249,7 +288,6 @@ function validarDadosPerfil(
   return null;
 }
 
-/** Atualiza o cadastro do médico logado (CRM permanece como login). */
 export function atualizarMedico(
   crmAtual: string,
   dados: DadosAtualizacaoMedico,
@@ -264,12 +302,7 @@ export function atualizarMedico(
   if (erro) return erro;
 
   const email = dados.email.trim().toLowerCase();
-  if (
-    lista.some(
-      (m, i) =>
-        i !== idx && m.email.toLowerCase() === email,
-    )
-  ) {
+  if (lista.some((m, i) => i !== idx && m.email.toLowerCase() === email)) {
     return "Já existe um cadastro com este e-mail.";
   }
 
@@ -279,6 +312,13 @@ export function atualizarMedico(
     if (erroSenha) return erroSenha;
     senha = dados.senhaNova;
   }
+
+  const locaisTrabalho = normalizarLocais(dados.locaisTrabalho);
+  let localAtivo = (dados.localAtivo || "").trim();
+  if (localAtivo && !locaisTrabalho.some((l) => l.toLowerCase() === localAtivo.toLowerCase())) {
+    locaisTrabalho.push(localAtivo);
+  }
+  if (!localAtivo && locaisTrabalho[0]) localAtivo = locaisTrabalho[0];
 
   const atualizado: Medico = {
     ...lista[idx],
@@ -296,6 +336,11 @@ export function atualizarMedico(
     rqe: dados.rqe.trim(),
     genero: dados.genero,
     senha,
+    locaisTrabalho,
+    localAtivo,
+    assinaturaJpg: dados.assinaturaJpg ?? "",
+    certificadoNome: dados.certificadoNome ?? "",
+    tipoAssinatura: dados.tipoAssinatura ?? "",
   };
 
   lista[idx] = atualizado;
@@ -333,22 +378,8 @@ export function getMasterSessao(): SessaoMaster | null {
 }
 
 function sessaoDeMedico(medico: Medico): SessaoMedico {
-  return {
-    nome: medico.nome,
-    crm: medico.crm,
-    email: medico.email,
-    telefone: medico.telefone,
-    cep: medico.cep,
-    logradouro: medico.logradouro,
-    numero: medico.numero,
-    complemento: medico.complemento,
-    bairro: medico.bairro,
-    cidade: medico.cidade,
-    estado: medico.estado,
-    especialidade: medico.especialidade,
-    rqe: medico.rqe,
-    genero: medico.genero,
-  };
+  const { senha: _s, ...rest } = medico;
+  return rest;
 }
 
 export function autenticar(crm: string, senha: string): string | null {
@@ -402,12 +433,32 @@ export function assinaturaMedico(s: SessaoMedico): string {
   const linhas = [tituloMedico(s), `CRM ${s.crm}`];
   if (s.especialidade.trim()) {
     let esp = s.especialidade.trim();
-    if (s.rqe.trim()) {
-      esp += ` — RQE ${s.rqe.trim()}`;
-    }
+    if (s.rqe.trim()) esp += ` — RQE ${s.rqe.trim()}`;
     linhas.push(esp);
   } else if (s.rqe.trim()) {
     linhas.push(`RQE ${s.rqe.trim()}`);
   }
   return linhas.join("\n");
+}
+
+/** Compacta JPG para caber no localStorage */
+export async function compactarAssinaturaJpg(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Envie um arquivo de imagem JPG.");
+  }
+  const bitmap = await createImageBitmap(file);
+  const maxW = 420;
+  const scale = Math.min(1, maxW / bitmap.width);
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Não foi possível processar a imagem.");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+  return canvas.toDataURL("image/jpeg", 0.72);
 }
