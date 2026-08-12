@@ -3,17 +3,34 @@ export type Observacao = {
   texto: string;
 };
 
-/** Observações comuns a todos os exames de US */
-export const observacoesGerais: Observacao[] = [
+/**
+ * Lista mestra fixa — numeração de exibição 1..N igual para todos os exames.
+ * O botão "Padrão" usa OBS_PADRAO_IDS (itens 1, 2, 7, 8 e 9 desta lista).
+ */
+export const observacoesPadraoLista: Observacao[] = [
   {
     id: "sem-anteriores",
-    texto:
-      "Exames anteriores não disponíveis para estudo comparativo.",
+    texto: "Exames anteriores não disponíveis para estudo comparativo.",
   },
   {
     id: "disposicao",
-    texto:
-      "Estaremos à disposição para a discussão do presente caso.",
+    texto: "Estaremos à disposição para a discussão do presente caso.",
+  },
+  {
+    id: "gases",
+    texto: "Exame prejudicado devido grande presença de gases intestinais.",
+  },
+  {
+    id: "jup",
+    texto: "JUP – Junção Uretero Piélica.",
+  },
+  {
+    id: "controle",
+    texto: "Conviria controle ecográfico periódico, a critério clínico.",
+  },
+  {
+    id: "correlacionar-lab",
+    texto: "Correlacionar com dados clínicos e laboratoriais.",
   },
   {
     id: "achados-negativos",
@@ -37,132 +54,67 @@ export const observacoesGerais: Observacao[] = [
   },
 ];
 
-/** Observações específicas por tipo de exame */
-export const observacoesPorExame: Record<string, Observacao[]> = {
-  "abdome-total": [
+/** Itens do botão "Padrão" — correspondem aos números 1, 2, 7, 8 e 9 da lista mestra */
+export const OBS_PADRAO_IDS = [
+  "sem-anteriores",
+  "disposicao",
+  "achados-negativos",
+  "correlacao-clinica",
+  "limite-metodo",
+] as const;
+
+/** Observações extras que entram no "Padrão" conforme o exame */
+const OBS_PADRAO_EXTRAS_POR_EXAME: Record<string, readonly string[]> = {
+  prostata: ["prostata-restrito"],
+};
+
+/** IDs marcados pelo botão Padrão / laudo normal (lista mestra + extras do exame) */
+export function observacoesPadraoIdsDoExame(exameId: string): string[] {
+  const extras = OBS_PADRAO_EXTRAS_POR_EXAME[exameId] ?? [];
+  return [...OBS_PADRAO_IDS, ...extras];
+}
+
+/** Observações extras por exame (aparecem após a lista mestra) */
+const observacoesExtrasPorExame: Record<string, Observacao[]> = {
+  prostata: [
     {
-      id: "gases",
+      id: "prostata-restrito",
       texto:
-        "Exame prejudicado devido grande presença de gases intestinais.",
-    },
-    {
-      id: "jup",
-      texto: "JUP – Junção Uretero Piélica.",
-    },
-    {
-      id: "preparo",
-      texto:
-        "A qualidade do estudo depende do preparo intestinal e da cooperação do paciente; segmentos mal visualizados devem ser reavaliados se houver indicação clínica.",
-    },
-    {
-      id: "apendicite",
-      texto:
-        "A não visualização do apêndice cecal não exclui apendicite; correlacionar clinicamente e considerar outros métodos se a suspeita persistir.",
-    },
-  ],
-  "abdome-superior": [
-    {
-      id: "gases",
-      texto:
-        "Exame prejudicado devido grande presença de gases intestinais.",
-    },
-    {
-      id: "preparo",
-      texto:
-        "A qualidade do estudo depende do preparo e da janela acústica; estruturas parcialmente visualizadas merecem correlação clínica.",
-    },
-    {
-      id: "pancreas-limite",
-      texto:
-        "A avaliação pancreática pode ser limitada por interposição gasosa; ausência de alteração no segmento visualizado não exclui patologia.",
-    },
-  ],
-  tireoide: [
-    {
-      id: "tirads-limite",
-      texto:
-        "A classificação de nódulos e a conduta dependem de critérios completos (incluindo medidas) e correlação clínica/laboratorial; este exame não substitui a avaliação endocrinológica.",
-    },
-    {
-      id: "linfonodo",
-      texto:
-        "A ausência de linfonodos com morfologia suspeita neste exame não exclui acometimento linfonodal; correlacionar clinicamente.",
+        "Exame restrito para avaliação do volume prostático, devendo ser correlacionado com os dados clínicos e exames laboratoriais específicos para pesquisa de neoplasia.",
     },
   ],
   pelvica: [
     {
-      id: "bexiga-replecao",
+      id: "pelvica-limite-ovarios",
       texto:
-        "A avaliação pélvica por via abdominal depende de repleção vesical adequada; estruturas não caracterizadas podem exigir complementação por via endovaginal, se indicado.",
-    },
-    {
-      id: "ciclo",
-      texto:
-        "Achados uterinos e ovarianos devem ser interpretados conforme a fase do ciclo menstrual / status hormonal e o contexto clínico.",
+        "Exame não indicado para avaliação de ovários com precisão devido à limitação do método; para melhor avaliação estaria indicado exame ultrassonográfico transvaginal (quando possível) ou ressonância nuclear magnética de pelve.",
     },
   ],
   mamas: [
     {
-      id: "birads-limite",
+      id: "mamas-mamografia",
       texto:
-        "A classificação BI-RADS e a conduta devem considerar o conjunto clínico-radiológico; este exame não substitui mamografia ou biópsia quando indicadas.",
-    },
-    {
-      id: "densidade",
-      texto:
-        "Mamas densas ou heterogêneas podem reduzir a sensibilidade da ultrassonografia; correlacionar com mamografia e clínica.",
-    },
-    {
-      id: "us-nao-substitui-mx",
-      texto:
-        "A ultrassonografia mamária não substitui a mamografia no rastreamento, salvo indicação clínica específica.",
+        "A critério clínico, tendo-se em conta o aspecto lipossubstituído do tecido mamário (normal para a pós-menopausa), estaria indicado para melhor avaliação estudo radiológico digital bilateral (mamografia digital).",
     },
   ],
-  "aparelho-urinario": [
+  "mamas-masculino": [
     {
-      id: "gases",
+      id: "ginecomastia-correlacao",
       texto:
-        "Exame prejudicado devido grande presença de gases intestinais.",
-    },
-    {
-      id: "jup",
-      texto: "JUP – Junção Uretero Piélica.",
-    },
-    {
-      id: "calculo-limite",
-      texto:
-        "A ausência de cálculo visualizado não exclui litíase ureteral, especialmente em trajetos mal acessíveis ao método; correlacionar clinicamente e com outros exames se necessário.",
-    },
-  ],
-  "obstetrico-1t": [
-    {
-      id: "idade-gestacional",
-      texto:
-        "A idade gestacional estimada por ultrassonografia deve ser correlacionada com a data da última menstruação e com exames prévios, quando disponíveis.",
-    },
-    {
-      id: "vitalidade",
-      texto:
-        "A avaliação da vitalidade embrionária neste exame reflete o momento da realização; alterações clínicas posteriores merecem reavaliação.",
-    },
-    {
-      id: "ectopica",
-      texto:
-        "A identificação de gestação tópica não exclui, por si só, a necessidade de investigação adicional na presença de sinais clínicos de gravidez ectópica.",
+        "Achados compatíveis com ginecomastia. Correlacionar com dados clínicos, uso de medicações e, se necessário, com dosagens hormonais.",
     },
   ],
 };
 
 export function observacoesDoExame(exameId: string): Observacao[] {
-  const especificas = observacoesPorExame[exameId] ?? [];
-  const ids = new Set(especificas.map((o) => o.id));
-  const gerais = observacoesGerais.filter((o) => !ids.has(o.id));
-  const todas = [...especificas, ...gerais];
-  // "Exames anteriores não disponíveis..." sempre no topo das observações
-  const semAnt = todas.find((o) => o.id === "sem-anteriores");
-  const resto = todas.filter((o) => o.id !== "sem-anteriores");
-  return semAnt ? [semAnt, ...resto] : resto;
+  const extras = observacoesExtrasPorExame[exameId] ?? [];
+  const idsMestra = new Set(observacoesPadraoLista.map((o) => o.id));
+  const extrasUnicos = extras.filter((o) => !idsMestra.has(o.id));
+  return [...observacoesPadraoLista, ...extrasUnicos];
 }
+
+/** @deprecated use observacoesPadraoLista — mantido para compatibilidade */
+export const observacoesGerais = observacoesPadraoLista;
 
 export const modalidadesCorrelacao = [
   "ultrassonografia",

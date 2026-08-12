@@ -618,39 +618,29 @@ textarea {
 .sections {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.section-block {
-  border: 1px solid #f0d4b8;
-  border-radius: 10px;
-  padding: 8px 10px;
-  background: #f7fbf7;
+  gap: 16px;
 }
 
 .section-block h3 {
-  margin: 0 0 6px;
-  font-size: 0.78rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  margin: 0 0 8px;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: #2a5c48;
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .chip {
-  border: 1px solid #d5dde6;
+  border: 1px solid var(--line);
   background: #fff;
   color: var(--ink);
   border-radius: 999px;
-  padding: 0.28rem 0.65rem;
+  padding: 0.45rem 0.85rem;
   cursor: pointer;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 600;
   transition: 0.15s ease;
 }
@@ -659,17 +649,7 @@ textarea {
   border-color: #9ecfc3;
 }
 
-.section-block .chip {
-  background: #fff;
-}
-
 .chip.on {
-  background: var(--teal);
-  border-color: var(--teal);
-  color: #fff;
-}
-
-.section-block .chip.on {
   background: var(--teal);
   border-color: var(--teal);
   color: #fff;
@@ -2170,36 +2150,52 @@ textarea {
   color: var(--muted);
 }
 
-/* —— Venoso MMII / cards compactos —— */
+.endereco-grid {
+  margin-top: 4px;
+}
+
+/* —— Doppler venoso MMII: formulário + marcador —— */
 .mmii-venoso-painel {
-  margin: 4px 0 10px;
-  padding: 0;
-  border: none;
-  background: transparent;
+  margin: 10px 0 16px;
+  padding: 12px;
+  border: 1px solid #d7e3d7;
+  border-radius: 12px;
+  background: #f4faf4;
+}
+
+.mmii-venoso-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .mmii-venoso-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .mmii-venoso-col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
-  max-width: 720px;
 }
 
 .mmii-bloco {
-  border: 1px solid #f0d4b8;
+  border: 1px solid #e8c9a8;
   border-radius: 10px;
-  padding: 8px 10px;
-  background: #f7fbf7;
+  padding: 10px 12px;
+  background: #eef8ef;
 }
 
 .mmii-bloco h4 {
-  margin: 0 0 6px;
-  font-size: 0.76rem;
-  letter-spacing: 0.03em;
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  font-weight: 700;
-  color: #2a5c48;
+  color: #2f5d3a;
 }
 
 .mmii-bloco-head {
@@ -2207,56 +2203,17 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .mmii-bloco-head h4 {
   margin: 0;
 }
 
-.btn-plus-mini {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  border: 1px solid #c5d0dc;
-  background: #fff;
-  color: #6a8499;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.btn-plus-mini:hover:not(:disabled) {
-  border-color: var(--teal);
-  color: var(--teal);
-}
-
-.btn-plus-mini:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-x-mini {
-  width: 20px;
-  height: 20px;
-  border: none;
-  background: transparent;
-  color: #8a9aab;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0;
-  cursor: pointer;
-}
-
 .mmii-medidas {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
 }
 
 .mmii-medidas label,
@@ -2264,28 +2221,24 @@ textarea {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.82rem;
-  color: #2c3a4a;
-  margin: 2px 0;
+  font-size: 0.88rem;
 }
 
 .mmii-medidas label {
   flex-direction: column;
   align-items: stretch;
   font-weight: 600;
-  font-size: 0.72rem;
-  color: #2a5c48;
+  font-size: 0.78rem;
 }
 
 .mmii-medidas input,
 .mmii-bloco select,
 .mmii-cm,
 .mmii-outras {
-  border: 1px solid #d5dde6;
-  border-radius: 6px;
-  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
   font: inherit;
-  font-size: 0.8rem;
   background: #fff;
 }
 
@@ -2293,77 +2246,70 @@ textarea {
 .mmii-item-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
   align-items: center;
-  margin-top: 4px;
-  margin-left: 22px;
+  margin-top: 6px;
 }
 
 .mmii-cm {
-  width: 52px;
+  width: 64px;
 }
 
 .mmii-outras {
   flex: 1;
-  min-width: 160px;
+  min-width: 180px;
   margin-left: 6px;
 }
 
 .mmii-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: 8px 12px;
 }
 
 .check-row.compact {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
 }
 
 .mmii-sub {
-  margin-top: 6px;
+  margin-top: 8px;
   padding-top: 6px;
-  border-top: 1px dashed #e0d0bc;
+  border-top: 1px dashed #cfe0cf;
 }
 
 .mmii-sub strong {
   display: block;
-  margin-bottom: 2px;
-  font-size: 0.82rem;
-  color: #1e2a38;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
 }
 
-.mmii-venoso-marcador {
-  margin-top: 8px;
-  margin-left: 22px;
+.mmii-venoso-marcador h4 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
 }
 
 .mmii-marcador-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .mmii-marcador-toolbar label {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
-}
-
-.mmii-marcador-toolbar .btn.small {
-  padding: 0.2rem 0.55rem;
-  font-size: 0.72rem;
 }
 
 .mmii-marcador-canvas {
   width: 100%;
-  max-width: 240px;
+  max-width: 280px;
   height: auto;
-  border: 1px solid #d5dde6;
-  border-radius: 8px;
+  border: 1px solid #9bb89b;
+  border-radius: 10px;
   background: #fff;
   touch-action: none;
   cursor: crosshair;
@@ -2379,9 +2325,5 @@ textarea {
   max-width: 280px;
   height: auto;
   border: 1px solid #ccc;
-}
-
-.endereco-grid {
-  margin-top: 4px;
 }
 

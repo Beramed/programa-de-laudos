@@ -1,0 +1,29 @@
+---
+description: Palavra "restart" restaura o layout anterior dos laudos
+alwaysApply: true
+---
+
+# Restart — restaurar layout anterior dos laudos
+
+Quando o usuário digitar **apenas** a palavra `restart` (ou pedir claramente para voltar ao modelo anterior de laudos):
+
+1. Restaurar os arquivos a partir de `_backup/restart-pre-layout-global/` (cópia do estado antes do layout global em cards + marcador em todos os laudos).
+2. Copiar de volta para a raiz do projeto, preservando a estrutura de pastas, no mínimo:
+
+   - `src/app/globals.css`
+   - `src/components/LaudoBuilder.tsx`
+   - `src/components/MarcadorImagemMmii.tsx`
+   - `src/components/MmiiVenosoPainel.tsx`
+   - `src/lib/montarLaudo.ts`
+   - `src/lib/mmiiVenosoForm.ts`
+   - `src/data/exames.ts`
+   - `src/data/mmiiArterialExames.ts`
+   - `src/data/mmiiVenosoExames.ts`
+   - `src/lib/ladoMsk.ts`
+
+3. Após restaurar, rode build e `npx vercel --prod --yes` e informe o link de produção.
+4. Não peça confirmação textual no chat — execute e use aprovação nativa se o sistema bloquear.
+
+## Observação
+
+Esse backup preserva o estado com venoso estruturado, marcador MMII e arterial com lateridade — **antes** de estender o layout de cards + marcação a todos os exames.
