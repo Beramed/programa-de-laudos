@@ -42,6 +42,51 @@ import {
   TECNICA_MMII_ARTERIAL,
   impressaoMmiiArterialNormal,
 } from "@/data/mmiiArterialExames";
+import {
+  ajustarExameMmssVenoso as ajustarExameMmssVenosoBase,
+  secoesMmssVenoso,
+  TECNICA_MMSS_VENOSO,
+  impressaoMmssVenosoNormal,
+} from "@/data/mmssVenosoExames";
+import {
+  ajustarExameMmssArterial as ajustarExameMmssArterialBase,
+  secoesMmssArterial,
+  TECNICA_MMSS_ARTERIAL,
+  impressaoMmssArterialNormal,
+} from "@/data/mmssArterialExames";
+import { exameObstetricoTvPrecoce } from "@/data/obstetricoTvPrecoceExames";
+import { exameObstetricoMorfo1t } from "@/data/obstetricoMorfo1tExames";
+import { exameObstetricoGemelar1t } from "@/data/obstetricoGemelar1tExames";
+import { exameObstetricoBasico } from "@/data/obstetricoBasicoExames";
+import { exameObstetricoMorfo2t } from "@/data/obstetricoMorfo2tExames";
+import { exameObstetricoDoppler } from "@/data/obstetricoDopplerExames";
+import { exameObstetricoGemelarDoppler } from "@/data/obstetricoGemelarDopplerExames";
+import { exameObstetricoPerfilBiofisico } from "@/data/obstetricoPerfilBiofisicoExames";
+import { exameObstetrico3d4d } from "@/data/obstetrico3d4dExames";
+import { exameCervicometria } from "@/data/cervicometriaExames";
+import { exameEcoFetal } from "@/data/ecoFetalExames";
+import { exameEcoFetalGemelar } from "@/data/ecoFetalGemelarExames";
+import { exameElastografiaHepatica } from "@/data/elastografiaHepaticaExames";
+import { exameEcocardiograma } from "@/data/ecocardiogramaExames";
+import { exameMamografia } from "@/data/mamografiaExames";
+import { exameArteriasTemporais } from "@/data/arteriasTemporaisExames";
+import {
+  exameTransfontanelar,
+  exameQuadrilInfantil,
+} from "@/data/pediatriaExames";
+import {
+  exameHisterossonografia,
+  exameHycosy,
+  examePelvicoTvHycosy,
+  examePelvicoTvDoppler,
+  exameEndometriose,
+  exameMonitoracaoFolicular,
+} from "@/data/ginecologiaExtraExames";
+import {
+  exameAvaliacaoMultiparametricaHepatica,
+  exameDopplerHepatico,
+  exameProstataTransretal,
+} from "@/data/hepaticoUrologiaExtraExames";
 import type { LadoArticulacao } from "@/lib/ladoMsk";
 
 
@@ -108,8 +153,16 @@ export function opcaoRequerMedida(opcao: Opcao): boolean {
   return false;
 }
 
+/** TIRADS / Chammas / Lagalla só no exame de tireoide */
+export function exameUsaClassificacaoTireoide(exameId: string): boolean {
+  return exameId === "tireoide" || exameId === "tireoide-doppler";
+}
+
 /** Nódulo/cisto tireoidiano: TIRADS obrigatório ao final da frase */
-export function opcaoRequerTirads(opcao: Opcao): boolean {
+export function opcaoRequerTirads(opcao: Opcao, exameId?: string): boolean {
+  if (exameId != null && !exameUsaClassificacaoTireoide(exameId)) {
+    return false;
+  }
   const s = `${opcao.id} ${opcao.label}`
     .toLowerCase()
     .normalize("NFD")
@@ -124,8 +177,14 @@ export function opcaoRequerTirads(opcao: Opcao): boolean {
   return /(nodulo|cisto|espongiforme)/.test(s);
 }
 
-/** Campos Doppler (Chammas/Lagalla/IR/IP/Vel) — nódulos */
-export function opcaoRequerDopplerNodulo(opcao: Opcao): boolean {
+/** Campos Doppler (Chammas/Lagalla/IR/IP/Vel) — nódulos da tireoide */
+export function opcaoRequerDopplerNodulo(
+  opcao: Opcao,
+  exameId?: string,
+): boolean {
+  if (exameId != null && !exameUsaClassificacaoTireoide(exameId)) {
+    return false;
+  }
   const s = `${opcao.id} ${opcao.label}`
     .toLowerCase()
     .normalize("NFD")
@@ -481,6 +540,22 @@ function enriquecerSecao(secao: Secao, exameId: string): Secao {
   if (!secaoElegivelOpcoesVisibilidade(secao)) return secao;
   const opcoes = [...secao.opcoes];
   const semRetiradaCirurgica =
+    exameId.startsWith("obstetrico") ||
+    exameId.startsWith("eco-fetal") ||
+    exameId === "cervicometria" ||
+    exameId === "ecocardiograma" ||
+    exameId === "elastografia-hepatica" ||
+    exameId === "arterias-temporais" ||
+    exameId === "transfontanelar" ||
+    exameId === "quadril-infantil" ||
+    exameId.startsWith("histero") ||
+    exameId === "hycosy" ||
+    exameId.startsWith("pelvico-tv") ||
+    exameId === "endometriose" ||
+    exameId === "monitoracao-folicular" ||
+    exameId === "avaliacao-multiparametrica-hepatica" ||
+    exameId === "doppler-hepatico" ||
+    exameId === "prostata-transretal" ||
     exameId === "dermatologico" ||
     exameId === "glandulas-salivares" ||
     exameId === "penis" ||
@@ -692,9 +767,21 @@ export function aplicarMedida(texto: string, medidaRaw: string): string {
     return texto.replace(/área de mm/i, `área de ${rawMm2}`);
   }
 
+  if (/medindo _{2,} x _{2,} x _{2,} cm/i.test(texto)) {
+    return texto.replace(
+      /medindo _{2,} x _{2,} x _{2,} cm/i,
+      `medindo ${medida} em seu maior eixo`,
+    );
+  }
+  if (/medindo _{2,} x _{2,} x _{2,} mm/i.test(texto)) {
+    return texto.replace(
+      /medindo _{2,} x _{2,} x _{2,} mm/i,
+      `medindo ${rawMm} em seu maior eixo`,
+    );
+  }
+
   const patterns: RegExp[] = [
     /medindo cerca de _{2,} cm/i,
-    /medindo _{2,} x _{2,} x _{2,} cm/i,
     /medindo _{2,} x _{2,} cm/i,
     /medindo _{2,} cm/i,
     /medindo cerca de cm/i,
@@ -3236,20 +3323,220 @@ const examesBase: Exame[] = [
     impressaoPadrao: "Exame ultrassonográfico do tórax dentro dos parâmetros da normalidade.",
   },
   {
+    id: "obstetrico-tv-precoce",
+    nome: exameObstetricoTvPrecoce().nome,
+    tituloDocumento: exameObstetricoTvPrecoce().tituloDocumento,
+    tecnica: exameObstetricoTvPrecoce().tecnica,
+    secoes: exameObstetricoTvPrecoce().secoes,
+    impressaoPadrao: exameObstetricoTvPrecoce().impressaoPadrao,
+  },
+  {
+    id: "obstetrico-morfo-1t",
+    nome: exameObstetricoMorfo1t().nome,
+    tituloDocumento: exameObstetricoMorfo1t().tituloDocumento,
+    tecnica: exameObstetricoMorfo1t().tecnica,
+    secoes: exameObstetricoMorfo1t().secoes,
+    impressaoPadrao: exameObstetricoMorfo1t().impressaoPadrao,
+  },
+  {
+    id: "obstetrico-gemelar-1t",
+    nome: exameObstetricoGemelar1t().nome,
+    tituloDocumento: exameObstetricoGemelar1t().tituloDocumento,
+    tecnica: exameObstetricoGemelar1t().tecnica,
+    secoes: exameObstetricoGemelar1t().secoes,
+    impressaoPadrao: exameObstetricoGemelar1t().impressaoPadrao,
+  },
+  {
     id: "obstetrico",
-    nome: "Obstétrico",
-    tituloDocumento: "ULTRASSONOGRAFIA OBSTÉTRICA",
-    tecnica:
-      "Exame realizado em modo bidimensional, com transdutor convexo multifrequencial.",
-    secoes: [
-      secaoCatalogo(
-        "achados",
-        "ACHADOS",
-        "obstetrico::achados",
-        "Gestação tópica, com parâmetros biométricos e líquido amniótico dentro dos limites da normalidade para a idade gestacional informada.",
-      ),
-    ],
-    impressaoPadrao: "Gestação tópica com parâmetros dentro da normalidade para a idade gestacional.",
+    nome: exameObstetricoBasico().nome,
+    tituloDocumento: exameObstetricoBasico().tituloDocumento,
+    tecnica: exameObstetricoBasico().tecnica,
+    secoes: exameObstetricoBasico().secoes,
+    impressaoPadrao: exameObstetricoBasico().impressaoPadrao,
+  },
+  {
+    id: "obstetrico-morfo-2t",
+    nome: exameObstetricoMorfo2t().nome,
+    tituloDocumento: exameObstetricoMorfo2t().tituloDocumento,
+    tecnica: exameObstetricoMorfo2t().tecnica,
+    secoes: exameObstetricoMorfo2t().secoes,
+    impressaoPadrao: exameObstetricoMorfo2t().impressaoPadrao,
+  },
+  {
+    id: "obstetrico-doppler",
+    nome: exameObstetricoDoppler().nome,
+    tituloDocumento: exameObstetricoDoppler().tituloDocumento,
+    tecnica: exameObstetricoDoppler().tecnica,
+    secoes: exameObstetricoDoppler().secoes,
+    impressaoPadrao: exameObstetricoDoppler().impressaoPadrao,
+  },
+  {
+    id: "obstetrico-gemelar-doppler",
+    nome: exameObstetricoGemelarDoppler().nome,
+    tituloDocumento: exameObstetricoGemelarDoppler().tituloDocumento,
+    tecnica: exameObstetricoGemelarDoppler().tecnica,
+    secoes: exameObstetricoGemelarDoppler().secoes,
+    impressaoPadrao: exameObstetricoGemelarDoppler().impressaoPadrao,
+  },
+  {
+    id: "obstetrico-perfil-biofisico",
+    nome: exameObstetricoPerfilBiofisico().nome,
+    tituloDocumento: exameObstetricoPerfilBiofisico().tituloDocumento,
+    tecnica: exameObstetricoPerfilBiofisico().tecnica,
+    secoes: exameObstetricoPerfilBiofisico().secoes,
+    impressaoPadrao: exameObstetricoPerfilBiofisico().impressaoPadrao,
+  },
+  {
+    id: "obstetrico-3d4d",
+    nome: exameObstetrico3d4d().nome,
+    tituloDocumento: exameObstetrico3d4d().tituloDocumento,
+    tecnica: exameObstetrico3d4d().tecnica,
+    secoes: exameObstetrico3d4d().secoes,
+    impressaoPadrao: exameObstetrico3d4d().impressaoPadrao,
+  },
+  {
+    id: "cervicometria",
+    nome: exameCervicometria().nome,
+    tituloDocumento: exameCervicometria().tituloDocumento,
+    tecnica: exameCervicometria().tecnica,
+    secoes: exameCervicometria().secoes,
+    impressaoPadrao: exameCervicometria().impressaoPadrao,
+  },
+  {
+    id: "eco-fetal",
+    nome: exameEcoFetal().nome,
+    tituloDocumento: exameEcoFetal().tituloDocumento,
+    tecnica: exameEcoFetal().tecnica,
+    secoes: exameEcoFetal().secoes,
+    impressaoPadrao: exameEcoFetal().impressaoPadrao,
+  },
+  {
+    id: "eco-fetal-gemelar",
+    nome: exameEcoFetalGemelar().nome,
+    tituloDocumento: exameEcoFetalGemelar().tituloDocumento,
+    tecnica: exameEcoFetalGemelar().tecnica,
+    secoes: exameEcoFetalGemelar().secoes,
+    impressaoPadrao: exameEcoFetalGemelar().impressaoPadrao,
+  },
+  {
+    id: "elastografia-hepatica",
+    nome: exameElastografiaHepatica().nome,
+    tituloDocumento: exameElastografiaHepatica().tituloDocumento,
+    tecnica: exameElastografiaHepatica().tecnica,
+    secoes: exameElastografiaHepatica().secoes,
+    impressaoPadrao: exameElastografiaHepatica().impressaoPadrao,
+  },
+  {
+    id: "avaliacao-multiparametrica-hepatica",
+    nome: exameAvaliacaoMultiparametricaHepatica().nome,
+    tituloDocumento: exameAvaliacaoMultiparametricaHepatica().tituloDocumento,
+    tecnica: exameAvaliacaoMultiparametricaHepatica().tecnica,
+    secoes: exameAvaliacaoMultiparametricaHepatica().secoes,
+    impressaoPadrao: exameAvaliacaoMultiparametricaHepatica().impressaoPadrao,
+  },
+  {
+    id: "doppler-hepatico",
+    nome: exameDopplerHepatico().nome,
+    tituloDocumento: exameDopplerHepatico().tituloDocumento,
+    tecnica: exameDopplerHepatico().tecnica,
+    secoes: exameDopplerHepatico().secoes,
+    impressaoPadrao: exameDopplerHepatico().impressaoPadrao,
+  },
+  {
+    id: "ecocardiograma",
+    nome: exameEcocardiograma().nome,
+    tituloDocumento: exameEcocardiograma().tituloDocumento,
+    tecnica: exameEcocardiograma().tecnica,
+    secoes: exameEcocardiograma().secoes,
+    impressaoPadrao: exameEcocardiograma().impressaoPadrao,
+  },
+  {
+    id: "mamografia",
+    nome: exameMamografia().nome,
+    tituloDocumento: exameMamografia().tituloDocumento,
+    tecnica: exameMamografia().tecnica,
+    secoes: exameMamografia().secoes,
+    impressaoPadrao: exameMamografia().impressaoPadrao,
+  },
+  {
+    id: "arterias-temporais",
+    nome: exameArteriasTemporais().nome,
+    tituloDocumento: exameArteriasTemporais().tituloDocumento,
+    tecnica: exameArteriasTemporais().tecnica,
+    secoes: exameArteriasTemporais().secoes,
+    impressaoPadrao: exameArteriasTemporais().impressaoPadrao,
+  },
+  {
+    id: "transfontanelar",
+    nome: exameTransfontanelar().nome,
+    tituloDocumento: exameTransfontanelar().tituloDocumento,
+    tecnica: exameTransfontanelar().tecnica,
+    secoes: exameTransfontanelar().secoes,
+    impressaoPadrao: exameTransfontanelar().impressaoPadrao,
+  },
+  {
+    id: "quadril-infantil",
+    nome: exameQuadrilInfantil().nome,
+    tituloDocumento: exameQuadrilInfantil().tituloDocumento,
+    tecnica: exameQuadrilInfantil().tecnica,
+    secoes: exameQuadrilInfantil().secoes,
+    impressaoPadrao: exameQuadrilInfantil().impressaoPadrao,
+  },
+  {
+    id: "histerossonografia",
+    nome: exameHisterossonografia().nome,
+    tituloDocumento: exameHisterossonografia().tituloDocumento,
+    tecnica: exameHisterossonografia().tecnica,
+    secoes: exameHisterossonografia().secoes,
+    impressaoPadrao: exameHisterossonografia().impressaoPadrao,
+  },
+  {
+    id: "hycosy",
+    nome: exameHycosy().nome,
+    tituloDocumento: exameHycosy().tituloDocumento,
+    tecnica: exameHycosy().tecnica,
+    secoes: exameHycosy().secoes,
+    impressaoPadrao: exameHycosy().impressaoPadrao,
+  },
+  {
+    id: "pelvico-tv-hycosy",
+    nome: examePelvicoTvHycosy().nome,
+    tituloDocumento: examePelvicoTvHycosy().tituloDocumento,
+    tecnica: examePelvicoTvHycosy().tecnica,
+    secoes: examePelvicoTvHycosy().secoes,
+    impressaoPadrao: examePelvicoTvHycosy().impressaoPadrao,
+  },
+  {
+    id: "pelvico-tv-doppler",
+    nome: examePelvicoTvDoppler().nome,
+    tituloDocumento: examePelvicoTvDoppler().tituloDocumento,
+    tecnica: examePelvicoTvDoppler().tecnica,
+    secoes: examePelvicoTvDoppler().secoes,
+    impressaoPadrao: examePelvicoTvDoppler().impressaoPadrao,
+  },
+  {
+    id: "endometriose",
+    nome: exameEndometriose().nome,
+    tituloDocumento: exameEndometriose().tituloDocumento,
+    tecnica: exameEndometriose().tecnica,
+    secoes: exameEndometriose().secoes,
+    impressaoPadrao: exameEndometriose().impressaoPadrao,
+  },
+  {
+    id: "monitoracao-folicular",
+    nome: exameMonitoracaoFolicular().nome,
+    tituloDocumento: exameMonitoracaoFolicular().tituloDocumento,
+    tecnica: exameMonitoracaoFolicular().tecnica,
+    secoes: exameMonitoracaoFolicular().secoes,
+    impressaoPadrao: exameMonitoracaoFolicular().impressaoPadrao,
+  },
+  {
+    id: "prostata-transretal",
+    nome: exameProstataTransretal().nome,
+    tituloDocumento: exameProstataTransretal().tituloDocumento,
+    tecnica: exameProstataTransretal().tecnica,
+    secoes: exameProstataTransretal().secoes,
+    impressaoPadrao: exameProstataTransretal().impressaoPadrao,
   },
   {
     id: "ombro",
@@ -3369,6 +3656,24 @@ const examesBase: Exame[] = [
     tecnica: TECNICA_MMII_VENOSO,
     secoes: secoesMmiiVenoso("direito"),
     impressaoPadrao: impressaoMmiiVenosoNormal("direito"),
+  },
+  {
+    id: "mmss-arterial",
+    nome: "Arterial MMSS",
+    tituloDocumento:
+      "ULTRASSONOGRAFIA DOPPLER VASCULAR DOS MEMBROS SUPERIORES (ARTERIAL)",
+    tecnica: TECNICA_MMSS_ARTERIAL,
+    secoes: secoesMmssArterial("direito"),
+    impressaoPadrao: impressaoMmssArterialNormal("direito"),
+  },
+  {
+    id: "mmss-venoso",
+    nome: "Venoso MMSS",
+    tituloDocumento:
+      "ULTRASSONOGRAFIA DOPPLER VASCULAR DOS MEMBROS SUPERIORES (VENOSO)",
+    tecnica: TECNICA_MMSS_VENOSO,
+    secoes: secoesMmssVenoso("direito"),
+    impressaoPadrao: impressaoMmssVenosoNormal("direito"),
   },
 ];
 
@@ -3589,6 +3894,20 @@ export function ajustarExameMmiiArterial(
   lado: LadoArticulacao | null = null,
 ): Exame {
   return ajustarExameMmiiArterialBase(exame, lado);
+}
+
+export function ajustarExameMmssVenoso(
+  exame: Exame,
+  lado: LadoArticulacao | null = null,
+): Exame {
+  return ajustarExameMmssVenosoBase(exame, lado);
+}
+
+export function ajustarExameMmssArterial(
+  exame: Exame,
+  lado: LadoArticulacao | null = null,
+): Exame {
+  return ajustarExameMmssArterialBase(exame, lado);
 }
 
 /** Joelho D/E com/sem Doppler */

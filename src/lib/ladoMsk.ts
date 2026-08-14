@@ -30,9 +30,21 @@ export function exameEhMmiiComLado(exameId: string): boolean {
   return exameId === "mmii-venoso" || exameId === "mmii-arterial";
 }
 
+/** Doppler MMSS (venoso/arterial) com lateridade D/E/ambos */
+export function exameEhMmssComLado(exameId: string): boolean {
+  return exameId === "mmss-venoso" || exameId === "mmss-arterial";
+}
+
+/** Doppler de membros (MMII ou MMSS) com lateridade */
+export function exameEhVascularMembroComLado(exameId: string): boolean {
+  return exameEhMmiiComLado(exameId) || exameEhMmssComLado(exameId);
+}
+
 /** Exames que pedem lateridade (direito / esquerdo / ambos) */
 export function exameRequerLado(exameId: string): boolean {
-  return exameEhMusculoEsqueletico(exameId) || exameEhMmiiComLado(exameId);
+  return (
+    exameEhMusculoEsqueletico(exameId) || exameEhVascularMembroComLado(exameId)
+  );
 }
 
 export function rotuloLadoCurto(lado: LadoArticulacao): string {
@@ -41,6 +53,11 @@ export function rotuloLadoCurto(lado: LadoArticulacao): string {
 
 export function rotuloLado(lado: LadoArticulacao): string {
   return lado === "direito" ? "direito" : "esquerdo";
+}
+
+/** Rótulo curto para MMSS (MSD / MSE) */
+export function rotuloLadoMmss(lado: LadoArticulacao): string {
+  return lado === "direito" ? "MSD" : "MSE";
 }
 
 export function ladoOposto(lado: LadoArticulacao): LadoArticulacao {
@@ -56,6 +73,11 @@ function sufixoTitulo(exameId: string, lado: LadoArticulacao): string {
       ? "— MEMBRO INFERIOR DIREITO"
       : "— MEMBRO INFERIOR ESQUERDO";
   }
+  if (exameEhMmssComLado(exameId)) {
+    return lado === "direito"
+      ? "— MEMBRO SUPERIOR DIREITO"
+      : "— MEMBRO SUPERIOR ESQUERDO";
+  }
   return lado === "direito" ? "DIREITO" : "ESQUERDO";
 }
 
@@ -68,7 +90,11 @@ export function tituloDocumentoComLado(
     exame.tituloDocumento?.trim() ||
     `ULTRASSONOGRAFIA — ${exame.nome.toUpperCase()}`;
   if (!lado) return base;
-  if (/\b(DIREITO|ESQUERDO|À DIREITA|À ESQUERDA|MEMBRO INFERIOR)\b/i.test(base))
+  if (
+    /\b(DIREITO|ESQUERDO|À DIREITA|À ESQUERDA|MEMBRO INFERIOR|MEMBRO SUPERIOR)\b/i.test(
+      base,
+    )
+  )
     return base;
   return `${base} ${sufixoTitulo(exame.id, lado)}`;
 }
@@ -81,7 +107,7 @@ export function nomeExameComLado(
   if (exame.id === "musculo") {
     return `${exame.nome} ${lado === "direito" ? "à direita" : "à esquerda"}`;
   }
-  if (exameEhMmiiComLado(exame.id)) {
+  if (exameEhMmiiComLado(exame.id) || exameEhMmssComLado(exame.id)) {
     return `${exame.nome} ${lado === "direito" ? "direito" : "esquerdo"}`;
   }
   return `${exame.nome} ${rotuloLado(lado)}`;

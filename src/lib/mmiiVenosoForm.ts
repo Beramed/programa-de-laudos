@@ -64,6 +64,8 @@ export type MmiiVenosoFormState = {
   obsOutras: string;
   /** Data URL do mapa marcado */
   mapaPng: string;
+  /** Incluir cartografia no laudo gerado */
+  anexarCartografia: boolean;
 };
 
 export const VEIAS_PROFUNDAS = [
@@ -135,11 +137,11 @@ export function formVenosoVazio(): MmiiVenosoFormState {
     obsCurativoOnde: "Terço inferior da perna",
     obsOutras: "",
     mapaPng: "",
+    anexarCartografia: true,
   };
 }
 
 export const CHAVE_FORM_VENOSO = "mmii-venoso-form";
-export const CHAVE_MAPA_LAUDO = "laudo-mapa-png";
 
 export function lerFormVenoso(
   volumes: Record<string, string> | undefined,
@@ -147,7 +149,15 @@ export function lerFormVenoso(
   const raw = volumes?.[CHAVE_FORM_VENOSO];
   if (!raw) return formVenosoVazio();
   try {
-    return { ...formVenosoVazio(), ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw) as Partial<MmiiVenosoFormState>;
+    return {
+      ...formVenosoVazio(),
+      ...parsed,
+      anexarCartografia:
+        parsed.anexarCartografia !== undefined
+          ? Boolean(parsed.anexarCartografia)
+          : true,
+    };
   } catch {
     return formVenosoVazio();
   }
@@ -310,7 +320,7 @@ export function textoFormVenosoParaLaudo(
   if (form.obsOutras.trim()) obs.push(form.obsOutras.trim());
   if (obs.length > 0) {
     linhas.push("");
-    linhas.push("**Observações adicionais:**");
+    linhas.push("**OBSERVAÇÕES ADICIONAIS:**");
     obs.forEach((o) => linhas.push(o));
   }
 

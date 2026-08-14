@@ -1,0 +1,24 @@
+---
+description: Lacunas ____ editáveis + curvas Hadlock/OMS/FMF em Obstetrícia
+globs: src/data/**/*Exames.ts,src/data/exames.ts,src/lib/lacunas.ts,src/lib/obstetricoDadosComuns.ts,src/components/LaudoBuilder.tsx
+alwaysApply: true
+---
+
+# Lacunas de valores nos laudos (`____`)
+
+Toda ocorrência de `____` (ou `___`) no `texto` / `impressao` / `impressaoPadrao` **deve** gerar campo editável na UI.
+
+- Lib: `src/lib/lacunas.ts`
+- UI: `LaudoBuilder` (lacunas do texto e da impressão da opção + impressão final)
+- Aplicação: `montarLaudo.ts`
+- Se a frase tiver 2+ lacunas, **cada uma** tem seu input.
+
+## Comparativo obstétrico (Hadlock / OMS / FMF)
+
+Todo exame de Obstetrícia deve usar `comCurvaReferenciaObst(secoes)` para incluir a escolha Hadlock (1991), OMS (WHO) ou FMF.
+
+## Ao criar laudos
+
+1. Padronizar placeholders em `____` (não `***` / `<>`).
+2. Uma lacuna = um valor = um campo.
+3. Novos laudos obstétricos: sempre `secoes: comCurvaReferenciaObst(...)`.

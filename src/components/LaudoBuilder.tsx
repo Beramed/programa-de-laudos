@@ -45,6 +45,8 @@ import {
   ajustarExameTornozelo,
   ajustarExameMmiiVenoso,
   ajustarExameMmiiArterial,
+  ajustarExameMmssVenoso,
+  ajustarExameMmssArterial,
   idsSelecionados,
   lesaoVazia,
   opcaoEhCalculoVesical,
@@ -75,13 +77,15 @@ import MedicoSolicitanteField from "@/components/MedicoSolicitanteField";
 import PacienteNomeField from "@/components/PacienteNomeField";
 import ConsultaLaudosModal from "@/components/ConsultaLaudosModal";
 import {
-  categoriasExame,
   categoriaDoExame,
   distribuirEmColunas,
-  examesDaCategoria,
-  examesDaCategoriaAlfabetico,
   type CategoriaExameId,
 } from "@/data/categorias";
+import {
+  categoriasDaModalidade,
+  exameInicialDaModalidade,
+  type ModalidadeId,
+} from "@/data/modalidades";
 import {
   OBS_PADRAO_IDS,
   modalidadesCorrelacao,
@@ -103,12 +107,15 @@ import {
 import {
   exameComLado,
   exameEhMmiiComLado,
+  exameEhMmssComLado,
+  exameEhVascularMembroComLado,
   exameEhMusculoEsqueletico,
   exameRequerLado,
   impressaoComLado,
   ladoOposto,
   nomeExameComLado,
   rotuloLado,
+  rotuloLadoMmss,
   type LadoArticulacao,
 } from "@/lib/ladoMsk";
 import {
@@ -116,7 +123,30 @@ import {
   gravarFormVenoso,
   lerFormVenoso,
 } from "@/lib/mmiiVenosoForm";
+import {
+  CHAVE_CARTOGRAFIA_MMSS,
+  gravarCartografiaMmss,
+  lerCartografiaMmss,
+} from "@/lib/mmssCartografia";
 import MmiiVenosoPainel from "@/components/MmiiVenosoPainel";
+import ObstetricoLaudousPainel from "@/components/ObstetricoLaudousPainel";
+import EcocardiogramaPainel from "@/components/EcocardiogramaPainel";
+import CartografiaMmssVenoso from "@/components/CartografiaMmssVenoso";
+import {
+  CHAVE_FORM_OBST_LAUDOUS,
+  gravarFormObstLaudous,
+  impressaoFormObstLaudous,
+  lerFormObstLaudous,
+  tipoObstPorExameId,
+} from "@/lib/obstetricoLaudousForm";
+import {
+  CHAVE_FORM_ECO,
+  calcularEco,
+  gravarFormEco,
+  impressaoFormEco,
+  lerFormEco,
+} from "@/lib/ecocardiogramaForm";
+import LupaAmpliar from "@/components/LupaAmpliar";
 import {
   laudoParaHtml,
   laudoTextoLimpo,
@@ -145,6 +175,20 @@ import {
   volumeDeDimensoes,
   volumeTotalTireoide,
 } from "@/lib/volumes";
+import {
+  CHAVES_OBST_DADOS,
+  EXAMES_COM_DADOS_GESTACIONAIS,
+  EXAMES_OBSTETRICOS,
+  valorCampoObst,
+} from "@/lib/obstetricoDadosComuns";
+import {
+  chaveLacuna,
+  chaveLacunaImpressaoFinal,
+  formatarIgPorMdg,
+  listarLacunas,
+  opcaoTemLacunas,
+  temLacunas,
+} from "@/lib/lacunas";
 
 const pacienteVazio = (): DadosPaciente => ({
   nome: "",
@@ -207,7 +251,11 @@ function novoBloco(
   const exame = exameAjustadoDoBloco(exameBase, {}, lado ?? null);
   const selecoes = selecoesPadrao(exame);
   let impressao = gerarImpressaoDiagnostica(exame, selecoes);
-  if (lado && !(exameId in MSK_DOPPLER_KEYS) && !exameEhMmiiComLado(exameId)) {
+  if (
+    lado &&
+    !(exameId in MSK_DOPPLER_KEYS) &&
+    !exameEhVascularMembroComLado(exameId)
+  ) {
     impressao = impressaoComLado(impressao, exame, lado);
   }
   return {
@@ -303,6 +351,8 @@ function exameAjustadoDoBloco(
   exame = ajustarExameMusculo(exame, volumes["musculo-doppler"] === "1");
   exame = ajustarExameMmiiVenoso(exame, lado);
   exame = ajustarExameMmiiArterial(exame, lado);
+  exame = ajustarExameMmssVenoso(exame, lado);
+  exame = ajustarExameMmssArterial(exame, lado);
   return exame;
 }
 
@@ -419,6 +469,7 @@ function limparMedidasOrfas(
   medidas: Medidas,
   secao: Secao,
   idsAtivos: string[],
+  exameId?: string,
 ): Medidas {
   const next = { ...medidas };
   delete next[secao.id];
@@ -447,14 +498,14 @@ function limparMedidasOrfas(
     }
     if (!ativo || !opcaoRequerIndiceEsplenico(op)) delete next[kInd];
     if (!ativo || !opcaoRequerVascLesao(op)) delete next[kVasc];
-    if (!ativo || !opcaoRequerTirads(op)) {
+    if (!ativo || !opcaoRequerTirads(op, exameId)) {
       delete next[kTirads];
       delete next[kChammas];
       delete next[kLagalla];
       delete next[kIr];
       delete next[kIp];
       delete next[kVel];
-    } else if (!ativo || !opcaoRequerDopplerNodulo(op)) {
+    } else if (!ativo || !opcaoRequerDopplerNodulo(op, exameId)) {
       delete next[kChammas];
       delete next[kLagalla];
       delete next[kIr];
@@ -498,6 +549,7 @@ function lesoesDaOpcao(
 
 type Props = {
   medico: SessaoMedico;
+  modalidadeId?: ModalidadeId;
 };
 
 export type LaudoBuilderHandle = {
@@ -506,12 +558,17 @@ export type LaudoBuilderHandle = {
 };
 
 const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder(
-  { medico },
+  { medico, modalidadeId = "ultrassom" },
   ref,
 ) {
-  const [blocos, setBlocos] = useState<BlocoUI[]>(() => [
-    novoBloco(exames[0].id),
-  ]);
+  const categoriasDisponiveis = useMemo(
+    () => categoriasDaModalidade(modalidadeId),
+    [modalidadeId],
+  );
+  const exameSeed =
+    exameInicialDaModalidade(modalidadeId) ?? exames[0]?.id ?? "abdome-total";
+
+  const [blocos, setBlocos] = useState<BlocoUI[]>(() => [novoBloco(exameSeed)]);
   const [paciente, setPaciente] = useState<DadosPaciente>(pacienteVazio);
   const [idSalvoAtual, setIdSalvoAtual] = useState<string | undefined>();
   const [laudoAssinado, setLaudoAssinado] = useState(false);
@@ -526,18 +583,33 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
   const [pickerAberto, setPickerAberto] = useState(false);
   const [consultaLaudosAberto, setConsultaLaudosAberto] = useState(false);
   const [categoriaAtiva, setCategoriaAtiva] = useState<CategoriaExameId>(
-    () => categoriaDoExame(exames[0]?.id ?? "abdome-total"),
+    () =>
+      categoriasDisponiveis[0]?.id ??
+      categoriaDoExame(exameSeed),
   );
   const [ladoPendente, setLadoPendente] = useState<{
     exameId: string;
     modo: "principal" | "acrescentar";
   } | null>(null);
+  const [lupaSrc, setLupaSrc] = useState<string | null>(null);
+  const [layoutMode, setLayoutMode] = useState<"normal" | "noturno" | "modo2">(
+    "normal",
+  );
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const examesTabsCols = useMemo(
-    () => distribuirEmColunas(examesDaCategoriaAlfabetico(categoriaAtiva), 3),
-    [categoriaAtiva],
-  );
+  const examesTabsCols = useMemo(() => {
+    const cat = categoriasDisponiveis.find((c) => c.id === categoriaAtiva);
+    const listaBruta = (cat?.exameIds ?? [])
+      .map((id) => getExame(id))
+      .filter((e): e is NonNullable<typeof e> => e != null);
+    const lista =
+      categoriaAtiva === "obstetricia"
+        ? listaBruta
+        : listaBruta
+            .slice()
+            .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    return distribuirEmColunas(lista, 3);
+  }, [categoriaAtiva, categoriasDisponiveis]);
 
   const laudoGerado = useMemo(() => {
     const montados = blocos
@@ -565,11 +637,46 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
   }, [blocos, paciente]);
 
   useEffect(() => {
+    const saved = window.localStorage.getItem("beramed-layout");
+    if (saved === "normal" || saved === "noturno" || saved === "modo2") {
+      setLayoutMode(saved);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("beramed-layout", layoutMode);
+    document.documentElement.setAttribute("data-layout", layoutMode);
+    return () => {
+      document.documentElement.removeAttribute("data-layout");
+    };
+  }, [layoutMode]);
+
+  useEffect(() => {
     if (textoManual) return;
     const el = previewRef.current;
     if (!el) return;
     el.innerHTML = laudoParaHtml(laudoGerado, medico);
   }, [laudoGerado, textoManual, medico]);
+
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!el) return;
+    function onClick(e: MouseEvent) {
+      const root = previewRef.current;
+      if (!root) return;
+      const t = e.target as HTMLElement | null;
+      const btn = t?.closest?.(".laudo-lupa-btn");
+      if (!btn || !root.contains(btn)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const wrap = btn.closest(".laudo-com-lupa");
+      const img = wrap?.querySelector("img");
+      const src = img?.getAttribute("src");
+      if (src) setLupaSrc(src);
+    }
+    el.addEventListener("click", onClick);
+    return () => el.removeEventListener("click", onClick);
+  }, []);
 
   function resumoExamesAtual(): string {
     return blocos
@@ -664,15 +771,21 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
   }));
 
   function htmlDoLaudo(baseUrl: string) {
+    let html: string;
     if (textoManual && htmlManual.trim()) {
       // Reescreve src relativos das tabelas com origem absoluta ao copiar/imprimir
-      if (!baseUrl) return htmlManual;
-      return htmlManual.replace(
-        /(src=")(\/tabelas\/[^"]+)(")/g,
-        `$1${baseUrl.replace(/\/$/, "")}$2$3`,
-      );
+      if (!baseUrl) html = htmlManual;
+      else {
+        html = htmlManual.replace(
+          /(src=")(\/tabelas\/[^"]+)(")/g,
+          `$1${baseUrl.replace(/\/$/, "")}$2$3`,
+        );
+      }
+    } else {
+      html = laudoParaHtml(laudoGerado, medico, baseUrl);
     }
-    return laudoParaHtml(laudoGerado, medico, baseUrl);
+    // Remove botões de lupa ao copiar/imprimir
+    return html.replace(/<button\b[^>]*class="laudo-lupa-btn"[^>]*>[\s\S]*?<\/button>/gi, "");
   }
 
   function plainDoLaudo() {
@@ -764,10 +877,10 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
           [secaoId]: multi || ehBexiga ? ids : ids[0] ?? "",
         };
         const medidas = (() => {
-          let m = limparMedidasOrfas(b.medidas, secao, ids);
+          let m = limparMedidasOrfas(b.medidas, secao, ids, b.exameId);
           for (const id of ids) {
             const op = secao.opcoes.find((o) => o.id === id);
-            if (!op || !opcaoRequerTirads(op)) continue;
+            if (!op || !opcaoRequerTirads(op, b.exameId)) continue;
             const k = chaveTirads(secao.id, id);
             if (!m[k]) {
               const padrao = tiradsPadraoOpcao(op);
@@ -809,7 +922,7 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
               if (
                 b.lado &&
                 !(b.exameId in MSK_DOPPLER_KEYS) &&
-                !exameEhMmiiComLado(b.exameId)
+                !exameEhVascularMembroComLado(b.exameId)
               ) {
                 imp = impressaoComLado(imp, exame, b.lado);
               }
@@ -865,6 +978,27 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
               medidas: {
                 ...b.medidas,
                 [chaveMedida(secaoId, opcaoId)]: valor,
+              },
+            }
+          : b,
+      ),
+    );
+    setTextoManual(false);
+  }
+
+  function atualizarLacuna(
+    key: string,
+    chave: string,
+    valor: string,
+  ) {
+    setBlocos((prev) =>
+      prev.map((b) =>
+        b.key === key
+          ? {
+              ...b,
+              medidas: {
+                ...b.medidas,
+                [chave]: valor,
               },
             }
           : b,
@@ -1098,6 +1232,25 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
   function adicionarExame(exameId: string, lado?: LadoArticulacao | null) {
     if (laudoAssinado) return;
     if (exameRequerLado(exameId) && !lado) {
+      // Se já existe um lado do mesmo exame, o + acrescenta direto o oposto (MSD↔MSE / D↔E)
+      if (exameEhVascularMembroComLado(exameId)) {
+        const ladosDoExame = blocos
+          .filter((b) => b.exameId === exameId && b.lado)
+          .map((b) => b.lado as LadoArticulacao);
+        if (ladosDoExame.length === 1) {
+          const outro = ladoOposto(ladosDoExame[0]);
+          if (!ladosDoExame.includes(outro)) {
+            setBlocos((prev) => [...prev, novoBloco(exameId, outro)]);
+            setPickerAberto(false);
+            setTextoManual(false);
+            return;
+          }
+        }
+        if (ladosDoExame.length >= 2) {
+          setPickerAberto(false);
+          return;
+        }
+      }
       setLadoPendente({ exameId, modo: "acrescentar" });
       setPickerAberto(false);
       return;
@@ -1145,13 +1298,19 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
     setPickerAberto(false);
 
     if (escolha === "ambos") {
-      const novos = [novoBloco(exameId, "direito"), novoBloco(exameId, "esquerdo")];
+      const novos = [
+        novoBloco(exameId, "direito"),
+        novoBloco(exameId, "esquerdo"),
+      ];
       if (modo === "principal") {
         setBlocos(novos);
         setIdSalvoAtual(undefined);
         setLaudoAssinado(false);
       } else {
-        setBlocos((prev) => [...prev, ...novos]);
+        setBlocos((prev) => {
+          const semDuplicata = prev.filter((b) => b.exameId !== exameId);
+          return [...semDuplicata, ...novos];
+        });
       }
       return;
     }
@@ -1161,7 +1320,13 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
       setIdSalvoAtual(undefined);
       setLaudoAssinado(false);
     } else {
-      setBlocos((prev) => [...prev, novoBloco(exameId, escolha)]);
+      setBlocos((prev) => {
+        const jaTem = prev.some(
+          (b) => b.exameId === exameId && b.lado === escolha,
+        );
+        if (jaTem) return prev;
+        return [...prev, novoBloco(exameId, escolha)];
+      });
     }
   }
 
@@ -1169,11 +1334,13 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
     if (laudoAssinado) return;
     if (!bloco.lado || !exameRequerLado(bloco.exameId)) return;
     const outro = ladoOposto(bloco.lado);
-    const jaTem = blocos.some(
-      (b) => b.exameId === bloco.exameId && b.lado === outro,
-    );
-    if (jaTem) return;
-    setBlocos((prev) => [...prev, novoBloco(bloco.exameId, outro)]);
+    setBlocos((prev) => {
+      const jaTem = prev.some(
+        (b) => b.exameId === bloco.exameId && b.lado === outro,
+      );
+      if (jaTem) return prev;
+      return [...prev, novoBloco(bloco.exameId, outro)];
+    });
     setTextoManual(false);
   }
 
@@ -1182,7 +1349,10 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
     // Em músculo esquelético só troca a aba — o lado abre ao clicar no exame
     if (categoriaId === "musculo-esqueletico") return;
 
-    const lista = examesDaCategoria(categoriaId);
+    const cat = categoriasDisponiveis.find((c) => c.id === categoriaId);
+    const lista = (cat?.exameIds ?? [])
+      .map((id) => getExame(id))
+      .filter((e): e is NonNullable<typeof e> => e != null);
     const atualNaCat = lista.some((e) => e.id === examePrincipalId);
     if (!atualNaCat && lista[0]) {
       setBlocos([novoBloco(lista[0].id)]);
@@ -1236,6 +1406,7 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
         .laudo-tabela img{width:100%;max-width:420px;height:auto;display:block;margin:0 auto}
         .laudo-mapa-mmii{margin:12px 0;text-align:center}
         .laudo-mapa-mmii img{max-width:280px;height:auto;border:1px solid #ccc}
+        .laudo-lupa-btn{display:none!important}
         .laudo-rodape-v2{margin-top:28px;font-family:Georgia,"Times New Roman",Times,serif;color:#4a4a4a}
         .laudo-rodape-cols{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;padding:0 4px}
         .laudo-rodape-esq{flex:0 1 280px;text-align:center;min-width:0}
@@ -1294,7 +1465,35 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
     : null;
 
   return (
-    <div className="builder">
+    <div className="builder" data-layout={layoutMode}>
+      <div className="layout-switcher" role="group" aria-label="Layout">
+        <span className="layout-switcher-label">Layout</span>
+        <button
+          type="button"
+          className={`layout-switcher-btn${layoutMode === "normal" ? " on" : ""}`}
+          aria-pressed={layoutMode === "normal"}
+          onClick={() => setLayoutMode("normal")}
+        >
+          Normal
+        </button>
+        <button
+          type="button"
+          className={`layout-switcher-btn${layoutMode === "noturno" ? " on" : ""}`}
+          aria-pressed={layoutMode === "noturno"}
+          onClick={() => setLayoutMode("noturno")}
+        >
+          Modo noturno
+        </button>
+        <button
+          type="button"
+          className={`layout-switcher-btn${layoutMode === "modo2" ? " on" : ""}`}
+          aria-pressed={layoutMode === "modo2"}
+          onClick={() => setLayoutMode("modo2")}
+        >
+          Modo 2
+        </button>
+      </div>
+
       <ConsultaLaudosModal
         aberto={consultaLaudosAberto}
         onFechar={() => setConsultaLaudosAberto(false)}
@@ -1327,7 +1526,9 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
             <p className="hint">
               {exameEhMmiiComLado(exameLadoPendente.id)
                 ? "Escolha o membro inferior solicitado ou ambos no mesmo documento."
-                : "Laudos músculo-esqueléticos são por articulação. Escolha o lado solicitado ou ambos no mesmo documento."}
+                : exameEhMmssComLado(exameLadoPendente.id)
+                  ? "Escolha o membro superior solicitado ou ambos no mesmo documento."
+                  : "Laudos músculo-esqueléticos são por articulação. Escolha o lado solicitado ou ambos no mesmo documento."}
             </p>
             <div className="lado-msk-acoes">
               <button
@@ -1335,21 +1536,27 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                 className="btn primary"
                 onClick={() => confirmarLadoMsk("direito")}
               >
-                {exameLadoPendente.nome} direito
+                {exameEhMmssComLado(exameLadoPendente.id)
+                  ? `${exameLadoPendente.nome} — MSD (direito)`
+                  : `${exameLadoPendente.nome} direito`}
               </button>
               <button
                 type="button"
                 className="btn primary"
                 onClick={() => confirmarLadoMsk("esquerdo")}
               >
-                {exameLadoPendente.nome} esquerdo
+                {exameEhMmssComLado(exameLadoPendente.id)
+                  ? `${exameLadoPendente.nome} — MSE (esquerdo)`
+                  : `${exameLadoPendente.nome} esquerdo`}
               </button>
               <button
                 type="button"
                 className="btn secondary"
                 onClick={() => confirmarLadoMsk("ambos")}
               >
-                Ambos os lados
+                {exameEhMmssComLado(exameLadoPendente.id)
+                  ? "Ambos (MSD + MSE)"
+                  : "Ambos os lados"}
               </button>
             </div>
           </div>
@@ -1470,7 +1677,7 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
           role="tablist"
           aria-label="Área do laudo"
         >
-          {categoriasExame.map((cat) => (
+          {categoriasDisponiveis.map((cat) => (
             <button
               key={cat.id}
               type="button"
@@ -1533,7 +1740,12 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
               [
                 ["idade", "Idade"],
                 ["data", "Data"],
-                ["indicacao", "Indicação"],
+                [
+                  "indicacao",
+                  blocos.some((b) => EXAMES_OBSTETRICOS.has(b.exameId))
+                    ? "Motivo do Exame"
+                    : "Indicação",
+                ],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="field">
@@ -1641,9 +1853,15 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                         type="button"
                         className="btn secondary small"
                         onClick={() => adicionarLadoOposto(bloco)}
-                        title={`Acrescentar ${exameBase.nome} ${rotuloLado(ladoFaltante)} neste laudo`}
+                        title={
+                          exameEhMmssComLado(bloco.exameId)
+                            ? `Acrescentar ${rotuloLadoMmss(ladoFaltante)} neste laudo`
+                            : `Acrescentar ${exameBase.nome} ${rotuloLado(ladoFaltante)} neste laudo`
+                        }
                       >
-                        + {exameBase.nome} {rotuloLado(ladoFaltante)}
+                        {exameEhMmssComLado(bloco.exameId)
+                          ? `+ ${rotuloLadoMmss(ladoFaltante)}`
+                          : `+ ${exameBase.nome} ${rotuloLado(ladoFaltante)}`}
                       </button>
                     ) : null}
                     {idx === 0 ? (
@@ -1663,14 +1881,23 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                             <p className="exame-picker-title">
                               Acrescentar laudo abaixo
                             </p>
-                            {categoriasExame.map((cat) => (
+                            {categoriasDisponiveis.map((cat) => (
                               <div key={cat.id} className="exame-picker-grupo">
                                 <p className="exame-picker-grupo-title">
                                   {cat.nome}
                                 </p>
                                 <div className="exame-picker-cols">
                                   {distribuirEmColunas(
-                                    examesDaCategoriaAlfabetico(cat.id),
+                                    cat.exameIds
+                                      .map((id) => getExame(id))
+                                      .filter(
+                                        (e): e is NonNullable<typeof e> =>
+                                          e != null,
+                                      )
+                                      .slice()
+                                      .sort((a, b) =>
+                                        a.nome.localeCompare(b.nome, "pt-BR"),
+                                      ),
                                     2,
                                   ).map((coluna, cIdx) => (
                                     <div
@@ -1730,7 +1957,9 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                         });
                       }}
                     >
-                      Direito
+                      {exameEhMmssComLado(bloco.exameId)
+                        ? "MSD (direito)"
+                        : "Direito"}
                     </button>
                     <button
                       type="button"
@@ -1752,7 +1981,9 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                         });
                       }}
                     >
-                      Esquerdo
+                      {exameEhMmssComLado(bloco.exameId)
+                        ? "MSE (esquerdo)"
+                        : "Esquerdo"}
                     </button>
                   </div>
                 ) : null}
@@ -2309,6 +2540,157 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                   </label>
                 ) : null}
 
+                {EXAMES_OBSTETRICOS.has(bloco.exameId) &&
+                tipoObstPorExameId(bloco.exameId) !== "outro" ? (
+                  <ObstetricoLaudousPainel
+                    exameId={bloco.exameId}
+                    valor={lerFormObstLaudous(bloco.volumes, bloco.exameId)}
+                    disabled={laudoAssinado}
+                    onChange={(form) => {
+                      const tipo = tipoObstPorExameId(bloco.exameId);
+                      const novaImp = impressaoFormObstLaudous(form, tipo);
+                      setBlocos((prev) =>
+                        prev.map((b) =>
+                          b.key === bloco.key
+                            ? {
+                                ...b,
+                                volumes: {
+                                  ...b.volumes,
+                                  [CHAVE_FORM_OBST_LAUDOUS]:
+                                    gravarFormObstLaudous(form),
+                                  [CHAVES_OBST_DADOS.dum]: form.dum,
+                                },
+                                impressao: b.impressaoManual
+                                  ? b.impressao
+                                  : novaImp,
+                              }
+                            : b,
+                        ),
+                      );
+                      if (form.indicacao.trim()) {
+                        setPaciente((p) => ({
+                          ...p,
+                          indicacao: form.indicacao.trim(),
+                        }));
+                      }
+                      setTextoManual(false);
+                    }}
+                  />
+                ) : null}
+
+                {EXAMES_COM_DADOS_GESTACIONAIS.has(bloco.exameId) &&
+                !(
+                  EXAMES_OBSTETRICOS.has(bloco.exameId) &&
+                  tipoObstPorExameId(bloco.exameId) !== "outro"
+                ) ? (
+                  <div className="obst-tv-dados">
+                    <label className="field medida-field">
+                      <span>DUM</span>
+                      <input
+                        type="text"
+                        disabled={laudoAssinado}
+                        value={valorCampoObst(bloco.volumes, "dum")}
+                        placeholder="DD/MM/AAAA"
+                        onChange={(ev) => {
+                          const valor = ev.target.value;
+                          setBlocos((prev) =>
+                            prev.map((b) =>
+                              b.key === bloco.key
+                                ? {
+                                    ...b,
+                                    volumes: {
+                                      ...b.volumes,
+                                      [CHAVES_OBST_DADOS.dum]: valor,
+                                    },
+                                  }
+                                : b,
+                            ),
+                          );
+                          setTextoManual(false);
+                        }}
+                      />
+                    </label>
+                    <label className="field medida-field">
+                      <span>IG pela DUM — semanas</span>
+                      <input
+                        type="text"
+                        disabled={laudoAssinado}
+                        value={valorCampoObst(bloco.volumes, "igSemanas")}
+                        placeholder="____"
+                        onChange={(ev) => {
+                          const valor = ev.target.value;
+                          setBlocos((prev) =>
+                            prev.map((b) =>
+                              b.key === bloco.key
+                                ? {
+                                    ...b,
+                                    volumes: {
+                                      ...b.volumes,
+                                      [CHAVES_OBST_DADOS.igSemanas]: valor,
+                                    },
+                                  }
+                                : b,
+                            ),
+                          );
+                          setTextoManual(false);
+                        }}
+                      />
+                    </label>
+                    <label className="field medida-field">
+                      <span>IG pela DUM — dias</span>
+                      <input
+                        type="text"
+                        disabled={laudoAssinado}
+                        value={valorCampoObst(bloco.volumes, "igDias")}
+                        placeholder="____"
+                        onChange={(ev) => {
+                          const valor = ev.target.value;
+                          setBlocos((prev) =>
+                            prev.map((b) =>
+                              b.key === bloco.key
+                                ? {
+                                    ...b,
+                                    volumes: {
+                                      ...b.volumes,
+                                      [CHAVES_OBST_DADOS.igDias]: valor,
+                                    },
+                                  }
+                                : b,
+                            ),
+                          );
+                          setTextoManual(false);
+                        }}
+                      />
+                    </label>
+                    <label className="field medida-field" style={{ maxWidth: 320 }}>
+                      <span>Equipamento (modelo)</span>
+                      <input
+                        type="text"
+                        disabled={laudoAssinado}
+                        value={valorCampoObst(bloco.volumes, "equipamento")}
+                        placeholder="Modelo do ultrassom"
+                        onChange={(ev) => {
+                          const valor = ev.target.value;
+                          setBlocos((prev) =>
+                            prev.map((b) =>
+                              b.key === bloco.key
+                                ? {
+                                    ...b,
+                                    volumes: {
+                                      ...b.volumes,
+                                      [CHAVES_OBST_DADOS.equipamento]: valor,
+                                    },
+                                  }
+                                : b,
+                            ),
+                          );
+                          setTextoManual(false);
+                        }}
+                      />
+                    </label>
+                  </div>
+                ) : null}
+
                 {bloco.exameId === "mmii-venoso" ? (
                   <MmiiVenosoPainel
                     valor={lerFormVenoso(bloco.volumes)}
@@ -2332,12 +2714,86 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                   />
                 ) : null}
 
+                {bloco.exameId === "ecocardiograma" ? (
+                  <EcocardiogramaPainel
+                    valor={lerFormEco(bloco.volumes)}
+                    disabled={laudoAssinado}
+                    onChange={(form) => {
+                      const calc = calcularEco(form);
+                      const novaImp = impressaoFormEco(form, calc);
+                      setBlocos((prev) =>
+                        prev.map((b) =>
+                          b.key === bloco.key
+                            ? {
+                                ...b,
+                                volumes: {
+                                  ...b.volumes,
+                                  [CHAVE_FORM_ECO]: gravarFormEco(form),
+                                },
+                                impressao: b.impressaoManual
+                                  ? b.impressao
+                                  : novaImp,
+                              }
+                            : b,
+                        ),
+                      );
+                      setTextoManual(false);
+                    }}
+                  />
+                ) : null}
+
+                {bloco.exameId === "mmss-venoso" ||
+                bloco.exameId === "mmss-arterial" ? (
+                  <CartografiaMmssVenoso
+                    key={`${bloco.key}-carto-${bloco.lado ?? "x"}`}
+                    lado={bloco.lado === "esquerdo" ? "esquerdo" : "direito"}
+                    valor={lerCartografiaMmss(bloco.volumes)}
+                    disabled={laudoAssinado}
+                    onChange={(carto) => {
+                      setBlocos((prev) =>
+                        prev.map((b) =>
+                          b.key === bloco.key
+                            ? {
+                                ...b,
+                                volumes: {
+                                  ...b.volumes,
+                                  [CHAVE_CARTOGRAFIA_MMSS]:
+                                    gravarCartografiaMmss(carto),
+                                },
+                              }
+                            : b,
+                        ),
+                      );
+                      setTextoManual(false);
+                    }}
+                  />
+                ) : null}
+
                 <div className="sections">
-                  {exame.secoes.map((secao) => {
+                  {exame.secoes
+                    .filter((secao) => {
+                      const usaPainelObst =
+                        EXAMES_OBSTETRICOS.has(bloco.exameId) &&
+                        tipoObstPorExameId(bloco.exameId) !== "outro";
+                      if (usaPainelObst) return secao.id === "achados-adicionais";
+                      if (bloco.exameId === "ecocardiograma") {
+                        return ![
+                          "conclusao",
+                        ].includes(secao.id);
+                      }
+                      return true;
+                    })
+                    .map((secao) => {
                     const idsAtivos = idsSelecionados(bloco.selecoes[secao.id]);
                     const opcoesComMedida = secao.opcoes.filter(
                       (op) =>
-                        idsAtivos.includes(op.id) && opcaoRequerMedida(op),
+                        idsAtivos.includes(op.id) &&
+                        opcaoRequerMedida(op) &&
+                        !temLacunas(op.texto),
+                    );
+                    const opcoesComLacunas = secao.opcoes.filter(
+                      (op) =>
+                        idsAtivos.includes(op.id) && opcaoTemLacunas(op),
                     );
                     const opcoesComEstenose = secao.opcoes.filter(
                       (op) =>
@@ -2356,7 +2812,10 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                       idsAtivos.length === 1 ? idsAtivos[0] : idsAtivos[0] ?? "";
 
                     return (
-                      <div key={secao.id} className="section-block">
+                      <div
+                        key={secao.id}
+                        className={`section-block${layoutMode === "modo2" ? " section-modo2" : ""}`}
+                      >
                         <h3>{secao.titulo}</h3>
                         {camposDim.map((campo) => {
                           const d =
@@ -2429,9 +2888,71 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                             Pode marcar mais de um achado no mesmo órgão.
                           </p>
                         ) : null}
-                        <div className="chips">
+                        <div
+                          className={`chips${layoutMode === "modo2" ? " chips-modo2" : ""}`}
+                        >
                           {secao.opcoes.map((op) => {
                             const ativo = idsAtivos.includes(op.id);
+                            const precisaMedida =
+                              opcaoRequerMedida(op) && !temLacunas(op.texto);
+                            const multiLesao = opcaoPermiteMultiplasLesoes(op);
+                            const precisaLocal = opcaoRequerLocalizacao(
+                              op,
+                              secao,
+                            );
+                            const medidaSimples =
+                              precisaMedida &&
+                              !multiLesao &&
+                              !precisaLocal &&
+                              !(
+                                comDopplerTireoide &&
+                                opcaoRequerDopplerNodulo(op, bloco.exameId)
+                              );
+                            const medidaValor =
+                              bloco.medidas[chaveMedida(secao.id, op.id)] ??
+                              bloco.medidas[secao.id] ??
+                              "";
+
+                            if (layoutMode === "modo2") {
+                              return (
+                                <label
+                                  key={op.id}
+                                  className={`chip-check${ativo ? " on" : ""}`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={ativo}
+                                    disabled={laudoAssinado}
+                                    onChange={() =>
+                                      escolherOpcao(bloco.key, secao.id, op.id)
+                                    }
+                                  />
+                                  <span className="chip-check-label">
+                                    {op.label}
+                                  </span>
+                                  {ativo && medidaSimples ? (
+                                    <input
+                                      type="text"
+                                      className="modo2-medida-inline"
+                                      value={medidaValor}
+                                      disabled={laudoAssinado}
+                                      placeholder="medida"
+                                      inputMode="decimal"
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={(e) =>
+                                        atualizarMedida(
+                                          bloco.key,
+                                          secao.id,
+                                          op.id,
+                                          e.target.value,
+                                        )
+                                      }
+                                    />
+                                  ) : null}
+                                </label>
+                              );
+                            }
+
                             return (
                               <button
                                 key={op.id}
@@ -2567,12 +3088,133 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                                 );
                               })
                           : null}
-                        {opcoesComMedida.map((op) => {
+                        {opcoesComLacunas.map((op) => {
+                          const metasTexto = listarLacunas(op.texto ?? "");
+                          const metasImp = listarLacunas(op.impressao ?? "");
+                          const temIgMdg = (op.texto ?? "").includes("{{IG_MDG}}");
+                          const mdgValor = temIgMdg
+                            ? (bloco.medidas[
+                                chaveLacuna(secao.id, op.id, "texto", 0)
+                              ] ?? "")
+                            : "";
+                          if (
+                            metasTexto.length === 0 &&
+                            metasImp.length === 0 &&
+                            !temIgMdg
+                          ) {
+                            return null;
+                          }
+                          return (
+                            <div
+                              key={`lacunas-${op.id}`}
+                              className="lacunas-box"
+                            >
+                              <p className="lesao-item-title">
+                                Valores — {op.label}
+                              </p>
+                              {metasTexto.length > 0 ? (
+                                <div className="lacunas-grid">
+                                  {metasTexto.map((meta) => {
+                                    const k = chaveLacuna(
+                                      secao.id,
+                                      op.id,
+                                      "texto",
+                                      meta.index,
+                                    );
+                                    return (
+                                      <label
+                                        key={k}
+                                        className="field medida-field"
+                                      >
+                                        <span>
+                                          {temIgMdg && meta.index === 0
+                                            ? "MDG (mm)"
+                                            : meta.rotulo}
+                                        </span>
+                                        <input
+                                          value={bloco.medidas[k] ?? ""}
+                                          disabled={laudoAssinado}
+                                          placeholder={meta.placeholder}
+                                          onChange={(ev) =>
+                                            atualizarLacuna(
+                                              bloco.key,
+                                              k,
+                                              ev.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
+                              {temIgMdg ? (
+                                <p className="volume-auto-hint">
+                                  IG pelo MDG:{" "}
+                                  <strong>{formatarIgPorMdg(mdgValor)}</strong>
+                                  {" "}(MDG + 30 dias)
+                                </p>
+                              ) : null}
+                              {metasImp.length > 0 ? (
+                                <>
+                                  <p
+                                    className="lesao-item-title"
+                                    style={{ marginTop: 10 }}
+                                  >
+                                    Valores da impressão — {op.label}
+                                  </p>
+                                  <div className="lacunas-grid">
+                                    {metasImp.map((meta) => {
+                                      const k = chaveLacuna(
+                                        secao.id,
+                                        op.id,
+                                        "impressao",
+                                        meta.index,
+                                      );
+                                      return (
+                                        <label
+                                          key={k}
+                                          className="field medida-field"
+                                        >
+                                          <span>{meta.rotulo}</span>
+                                          <input
+                                            value={bloco.medidas[k] ?? ""}
+                                            disabled={laudoAssinado}
+                                            placeholder={meta.placeholder}
+                                            onChange={(ev) =>
+                                              atualizarLacuna(
+                                                bloco.key,
+                                                k,
+                                                ev.target.value,
+                                              )
+                                            }
+                                          />
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                        {opcoesComMedida
+                          .filter((op) => {
+                            if (layoutMode !== "modo2") return true;
+                            // No modo 2 a medida simples já aparece ao lado do nome
+                            return (
+                              opcaoPermiteMultiplasLesoes(op) ||
+                              opcaoRequerLocalizacao(op, secao) ||
+                              (comDopplerTireoide &&
+                                opcaoRequerDopplerNodulo(op, bloco.exameId))
+                            );
+                          })
+                          .map((op) => {
                           const multi = opcaoPermiteMultiplasLesoes(op);
                           const precisaLocal = opcaoRequerLocalizacao(op, secao);
                           const showDopplerMedida =
                             comDopplerTireoide &&
-                            opcaoRequerDopplerNodulo(op);
+                            opcaoRequerDopplerNodulo(op, bloco.exameId);
                           const items = multi
                             ? lesoesDaOpcao(bloco, secao, op.id)
                             : [
@@ -2820,17 +3462,19 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
                             </div>
                           );
                         })}
-                        {secao.opcoes
-                          .filter(
-                            (op) =>
-                              idsAtivos.includes(op.id) &&
-                              opcaoRequerTirads(op),
-                          )
-                          .map((op) => {
+                        {(bloco.exameId === "tireoide" ||
+                        bloco.exameId === "tireoide-doppler"
+                          ? secao.opcoes.filter(
+                              (op) =>
+                                idsAtivos.includes(op.id) &&
+                                opcaoRequerTirads(op, bloco.exameId),
+                            )
+                          : []
+                        ).map((op) => {
                             const tiradsKey = chaveTirads(secao.id, op.id);
                             const showDoppler =
                               comDopplerTireoide &&
-                              opcaoRequerDopplerNodulo(op);
+                              opcaoRequerDopplerNodulo(op, bloco.exameId);
                             return (
                               <div key={`tirads-${op.id}`} className="tirads-box">
                                 <p className="lesao-item-title">
@@ -3367,6 +4011,38 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
 
                 <label className="field impressao-field">
                   <span>Impressão diagnóstica / conclusão</span>
+                  {temLacunas(bloco.impressao) ? (
+                    <div className="lacunas-box" style={{ marginBottom: 8 }}>
+                      <p className="lesao-item-title">
+                        Valores da impressão diagnóstica
+                      </p>
+                      <div className="lacunas-grid">
+                        {listarLacunas(bloco.impressao).map((meta) => {
+                          const k = chaveLacunaImpressaoFinal(meta.index);
+                          return (
+                            <label
+                              key={k}
+                              className="field medida-field"
+                            >
+                              <span>{meta.rotulo}</span>
+                              <input
+                                value={bloco.medidas[k] ?? ""}
+                                disabled={laudoAssinado}
+                                placeholder={meta.placeholder}
+                                onChange={(ev) =>
+                                  atualizarLacuna(
+                                    bloco.key,
+                                    k,
+                                    ev.target.value,
+                                  )
+                                }
+                              />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
                   <textarea
                     rows={4}
                     value={bloco.impressao}
@@ -3655,6 +4331,12 @@ const LaudoBuilder = forwardRef<LaudoBuilderHandle, Props>(function LaudoBuilder
             role="textbox"
             aria-multiline="true"
             aria-label="Laudo formatado editável"
+          />
+
+          <LupaAmpliar
+            src={lupaSrc}
+            alt="Imagem ampliada do laudo"
+            onClose={() => setLupaSrc(null)}
           />
 
           <div className="laudo-acoes-fim">

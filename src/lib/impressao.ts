@@ -23,6 +23,18 @@ const IDS_NORMAIS = new Set([
   "homogeneo",
   "endometrio-normal",
   "sem-achados",
+  "certa",
+  "incerta",
+  "irregular",
+  "nao",
+  "viavel",
+  "2",
+  "8",
+  "modificado",
+  "completo",
+  "normal-sem-liquido",
+  "normal-liquido-fisiologico",
+  "normal-liquido-livre",
 ]);
 
 const SECOES_SEM_IMPRESSAO = new Set([
@@ -31,6 +43,9 @@ const SECOES_SEM_IMPRESSAO = new Set([
   "doppler",
   "tecnica",
   "istmo",
+  "dum-confiabilidade",
+  "via-acesso",
+  "curva-referencia",
 ]);
 
 function normaliza(s: string): string {
@@ -73,6 +88,23 @@ export function opcaoEhNormal(opcao: Opcao, secao: Secao): boolean {
     ) {
       return true;
     }
+  }
+  // Soft markers obstétricos: padrão sem impressão própria = normal
+  if (
+    (secao.id === "osso-nasal" && id === "presente") ||
+    (secao.id === "regurgitacao-tricuspide" && id === "ausente") ||
+    (secao.id === "lambda" && id === "presente") ||
+    (secao.id === "vitalidade" && id === "presente") ||
+    (secao.id === "trofoblasto" &&
+      (id === "anterior" || id === "posterior" || id === "difusa")) ||
+    (secao.id === "corionicidade" &&
+      (id === "dois-sacos" || id === "dic-dia" || id === "monoc-mono")) ||
+    (secao.id === "riscos-cromossomicos" && id === "preenchido") ||
+    (secao.id === "placenta" && (id === "duas" || id === "unica")) ||
+    (secao.id === "relacao-umbilico-cerebral" && id === "normal") ||
+    (secao.id === "situacao-fetal" && id === "livre")
+  ) {
+    return true;
   }
   return false;
 }
@@ -198,6 +230,10 @@ export function fraseDeOpcao(secao: Secao, opcao: Opcao): string {
         t,
       )
     ) {
+      return /[.!?]$/.test(t) ? t : `${t}.`;
+    }
+    // Frases diagnósticas completas (com lacunas ____ etc.)
+    if (t.length > 48 || /____/.test(t) || /^Gestação\b/i.test(t) || /^Suspeita\b/i.test(t) || /^Achados\b/i.test(t)) {
       return /[.!?]$/.test(t) ? t : `${t}.`;
     }
   }

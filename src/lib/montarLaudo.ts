@@ -25,6 +25,7 @@ import {
   opcaoRequerMedida,
   opcaoRequerTirads,
   opcaoRequerVascLesao,
+  exameUsaClassificacaoTireoide,
 } from "@/data/exames";
 import {
   aplicarMaoDedoAchado,
@@ -41,6 +42,34 @@ import {
   lerFormVenoso,
   textoFormVenosoParaLaudo,
 } from "@/lib/mmiiVenosoForm";
+import {
+  lerCartografiaMmss,
+  fraseMapeamentoFistulaMmss,
+} from "@/lib/mmssCartografia";
+import {
+  aplicarEquipamentoObst,
+  EXAMES_COM_DADOS_GESTACIONAIS,
+  EXAMES_OBSTETRICOS,
+  textoDadosGestacionaisObst,
+} from "@/lib/obstetricoDadosComuns";
+import {
+  calcularEco,
+  lerFormEco,
+  textoFormEcoParaLaudo,
+} from "@/lib/ecocardiogramaForm";
+import {
+  lerFormObstLaudous,
+  textoFormObstLaudousParaLaudo,
+  tipoObstPorExameId,
+} from "@/lib/obstetricoLaudousForm";
+import {
+  aplicarIgMdgNoTexto,
+  aplicarLacunas,
+  aplicarLacunasNaImpressao,
+  contarLacunas,
+  lerValoresLacunas,
+  temLacunas,
+} from "@/lib/lacunas";
 import type { LadoArticulacao } from "@/lib/ladoMsk";
 import {
   DISCLAIMER_IMPRESSAO,
@@ -187,6 +216,72 @@ function fundirTextosOpcoes(blocos: string[]): string {
     }
   }
   return linhas.join("\n");
+}
+
+/** Abertura típica do fígado (situação / dimensões) — substituída se houver hepatomegalia. */
+const ABERTURA_FIGADO_RE =
+  /^(com situa[cç][aã]o|f[ií]gado de morfologia|aumentado de volume)\b/i;
+
+function ehOpcaoHepatomegalia(id: string, label = ""): boolean {
+  const s = `${id} ${label}`
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return /hepatomegalia/.test(s);
+}
+
+/**
+ * Com hepatomegalia selecionada, a 1ª frase do fígado
+ * (ex.: "Com situação, forma e contornos preservados, dimensões normais a discretamente aumentadas.")
+ * é trocada pela frase de hepatomegalia.
+ */
+function fundirTextosFigado(
+  ids: string[],
+  secao: { opcoes: { id: string; label: string; texto: string }[] },
+  blocos: string[],
+): string {
+  const idxHepato = ids.findIndex((id) => {
+    const op = secao.opcoes.find((o) => o.id === id);
+    return op ? ehOpcaoHepatomegalia(op.id, op.label) : ehOpcaoHepatomegalia(id);
+  });
+  if (idxHepato < 0) return fundirTextosOpcoes(blocos);
+
+  const linhasHepato = (blocos[idxHepato] ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (linhasHepato.length === 0) return fundirTextosOpcoes(blocos);
+
+  const aberturaHepato = linhasHepato[0];
+  const restoHepato = linhasHepato.slice(1);
+  const outras: string[] = [];
+
+  for (let i = 0; i < blocos.length; i++) {
+    if (i === idxHepato) continue;
+    const parts = (blocos[i] ?? "")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (parts.length === 0) continue;
+    // Remove a frase inicial de situação/dimensões (substituída pela hepatomegalia)
+    const semAbertura = ABERTURA_FIGADO_RE.test(parts[0])
+      ? parts.slice(1)
+      : parts;
+    outras.push(...semAbertura);
+  }
+
+  const vistas = new Set<string>();
+  const out: string[] = [];
+  for (const line of [aberturaHepato, ...restoHepato, ...outras]) {
+    const key = line
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    if (vistas.has(key)) continue;
+    vistas.add(key);
+    out.push(line);
+  }
+  return out.join("\n");
 }
 
 /**
@@ -497,12 +592,50 @@ function montarCorpoExame(
     if (
       exame.id === "carotidas" ||
       exame.id === "mmii-venoso" ||
-      exame.id === "mmii-arterial"
+      exame.id === "mmii-arterial" ||
+      exame.id === "mmss-venoso" ||
+      exame.id === "mmss-arterial" ||
+      EXAMES_COM_DADOS_GESTACIONAIS.has(exame.id)
     ) {
-      linhas.push("**2. METODOLOGIA E EQUIPAMENTO**");
+      linhas.push(
+        EXAMES_COM_DADOS_GESTACIONAIS.has(exame.id)
+          ? "**2. DADOS TÉCNICOS E APARELHAGEM**"
+          : "**2. METODOLOGIA E EQUIPAMENTO**",
+      );
       linhas.push("");
     }
-    linhas.push(exame.tecnica.trim());
+    const tecnica = EXAMES_COM_DADOS_GESTACIONAIS.has(exame.id)
+      ? aplicarEquipamentoObst(exame.tecnica.trim(), volumes)
+      : exame.tecnica.trim();
+    linhas.push(tecnica);
+    linhas.push("");
+  }
+
+  if (EXAMES_COM_DADOS_GESTACIONAIS.has(exame.id)) {
+    const formObstPre = EXAMES_OBSTETRICOS.has(exame.id)
+      ? lerFormObstLaudous(volumes, exame.id)
+      : null;
+    const volsGest =
+      formObstPre?.dum?.trim()
+        ? { ...volumes, "obst-dum": formObstPre.dum.trim() }
+        : volumes;
+    linhas.push(textoDadosGestacionaisObst(volsGest));
+    linhas.push("");
+    linhas.push("**3. DESCRIÇÃO TÉCNICA ANALÍTICA**");
+    linhas.push("");
+  }
+
+  const formObst = EXAMES_OBSTETRICOS.has(exame.id)
+    ? lerFormObstLaudous(volumes, exame.id)
+    : null;
+  const tipoObst = formObst ? tipoObstPorExameId(exame.id) : "outro";
+  const corpoObst =
+    formObst && tipoObst !== "outro"
+      ? textoFormObstLaudousParaLaudo(formObst, tipoObst)
+      : "";
+  const usarPainelObst = Boolean(corpoObst.trim());
+  if (usarPainelObst) {
+    linhas.push(corpoObst);
     linhas.push("");
   }
 
@@ -533,6 +666,12 @@ function montarCorpoExame(
   let achadosHeaderEmitido = false;
 
   for (const secao of exame.secoes) {
+    if (
+      usarPainelObst &&
+      secao.id !== "achados-adicionais"
+    ) {
+      continue;
+    }
     if (
       unificarRinsNormais &&
       (secao.id === "rim-direito" || secao.id === "rim-esquerdo")
@@ -566,24 +705,38 @@ function montarCorpoExame(
       let trecho = opcao.texto.trim();
       if (!trecho) continue;
       const listaLesoes = lesoes?.[chaveLesoes(secao.id, id)];
-      if (
+      const usaLesoes =
         opcaoPermiteMultiplasLesoes(opcao) &&
-        listaLesoes &&
-        listaLesoes.length > 0
-      ) {
+        !!listaLesoes &&
+        listaLesoes.length > 0 &&
+        listaLesoes.some((l) => l.medida.trim() || l.local.trim());
+
+      if (usaLesoes) {
         trecho = aplicarMultiplasLesoes(trecho, listaLesoes);
-      } else {
-        if (opcaoRequerMedida(opcao)) {
-          const med =
-            medidas?.[chaveMedida(secao.id, id)] ??
-            medidas?.[secao.id] ??
-            "";
-          trecho = aplicarMedida(trecho, med);
+      }
+
+      if (temLacunas(trecho) || trecho.includes("{{IG_MDG}}")) {
+        const vals = lerValoresLacunas(
+          medidas,
+          secao.id,
+          id,
+          "texto",
+          Math.max(contarLacunas(trecho), 1),
+        );
+        if (temLacunas(trecho)) {
+          trecho = aplicarLacunas(trecho, vals);
         }
-        if (opcaoRequerLocalizacao(opcao, secao)) {
-          const loc = medidas?.[chaveLocalizacao(secao.id, id)] ?? "";
-          trecho = aplicarLocalizacao(trecho, loc);
-        }
+        trecho = aplicarIgMdgNoTexto(trecho, vals[0]);
+      } else if (!usaLesoes && opcaoRequerMedida(opcao)) {
+        const med =
+          medidas?.[chaveMedida(secao.id, id)] ??
+          medidas?.[secao.id] ??
+          "";
+        trecho = aplicarMedida(trecho, med);
+      }
+      if (!usaLesoes && opcaoRequerLocalizacao(opcao, secao)) {
+        const loc = medidas?.[chaveLocalizacao(secao.id, id)] ?? "";
+        trecho = aplicarLocalizacao(trecho, loc);
       }
       if (opcaoRequerEstenose(opcao)) {
         const pct = medidas?.[chaveEstenose(secao.id, id)] ?? "";
@@ -625,8 +778,8 @@ function montarCorpoExame(
         }
       }
       if (
-        (exame.id === "tireoide" || exame.id === "tireoide-doppler") &&
-        opcaoRequerTirads(opcao)
+        (exameUsaClassificacaoTireoide(exame.id) &&
+          opcaoRequerTirads(opcao, exame.id))
       ) {
         trecho = aplicarClassificacaoNoduloTireoide(
           trecho,
@@ -673,6 +826,9 @@ function montarCorpoExame(
     }
 
     let texto = fundirTextosOpcoes(blocosTexto);
+    if (secao.id === "figado") {
+      texto = fundirTextosFigado(ids, secao, blocosTexto);
+    }
     if (secao.id === "lobo-d" || secao.id === "lobo-e") {
       texto = fundirTextosLoboTireoide(ids, blocosTexto);
     }
@@ -694,12 +850,16 @@ function montarCorpoExame(
       exame.id === "cotovelo" ||
       exame.id === "carotidas" ||
       exame.id === "mmii-venoso" ||
-      exame.id === "mmii-arterial";
+      exame.id === "mmii-arterial" ||
+      exame.id === "mmss-venoso" ||
+      exame.id === "mmss-arterial";
     if (precisaHeaderAchados && !achadosHeaderEmitido) {
       if (
         exame.id === "carotidas" ||
         exame.id === "mmii-venoso" ||
-        exame.id === "mmii-arterial"
+        exame.id === "mmii-arterial" ||
+        exame.id === "mmss-venoso" ||
+        exame.id === "mmss-arterial"
       ) {
         linhas.push("**3. DESCRIÇÃO DOS ACHADOS ULTRASSONOGRÁFICOS**");
       } else {
@@ -722,10 +882,39 @@ function montarCorpoExame(
       linhas.push(extraForm);
       linhas.push("");
     }
-    if (form.mapaPng) {
+    if (form.anexarCartografia && form.mapaPng) {
       linhas.push("**Mapa esquemático (marcação):**");
       linhas.push("");
       linhas.push(`@@IMG:${form.mapaPng}`);
+      linhas.push("");
+    }
+  }
+
+  if (exame.id === "ecocardiograma") {
+    const formEco = lerFormEco(volumes);
+    const calcEco = calcularEco(formEco);
+    const textoEco = textoFormEcoParaLaudo(formEco, calcEco);
+    if (textoEco.trim()) {
+      linhas.push(textoEco);
+      linhas.push("");
+    }
+  }
+
+  if (exame.id === "mmss-venoso" || exame.id === "mmss-arterial") {
+    const carto = lerCartografiaMmss(volumes);
+    if (carto.anexarCartografia && carto.mapaPng) {
+      const ladoMmss: LadoArticulacao = /esquerdo/i.test(exame.nome)
+        ? "esquerdo"
+        : "direito";
+      linhas.push(fraseMapeamentoFistulaMmss(exame.id, ladoMmss));
+      linhas.push("");
+      linhas.push(
+        exame.id === "mmss-arterial"
+          ? "**Cartografia pré-fístula (arterial):**"
+          : "**Cartografia pré-fístula (venosa):**",
+      );
+      linhas.push("");
+      linhas.push(`@@IMG:${carto.mapaPng}`);
       linhas.push("");
     }
   }
@@ -759,6 +948,12 @@ function montarCorpoExame(
   if (exame.id === "mamas-masculino") {
     impressaoFinal = aplicarGinecoNoTexto(impressaoFinal, selecoes, volumes);
   }
+  impressaoFinal = aplicarLacunasNaImpressao(
+    exame,
+    selecoes,
+    medidas,
+    impressaoFinal,
+  );
   linhas.push(impressaoFinal);
   linhas.push("");
 
@@ -836,8 +1031,19 @@ export function montarLaudos(
   if (paciente.data.trim()) linhas.push(`Data: ${paciente.data.trim()}`);
   if (paciente.solicitante.trim())
     linhas.push(`Médico solicitante: ${paciente.solicitante.trim()}`);
-  if (paciente.indicacao.trim())
-    linhas.push(`Indicação: ${paciente.indicacao.trim()}`);
+  if (paciente.indicacao.trim()) {
+    const ehObst = blocos.some(
+      (b) =>
+        b.exame.id.startsWith("obstetrico") ||
+        b.exame.id === "cervicometria" ||
+        b.exame.id.startsWith("eco-fetal"),
+    );
+    linhas.push(
+      ehObst
+        ? `Motivo do Exame:\n${paciente.indicacao.trim()}`
+        : `Indicação: ${paciente.indicacao.trim()}`,
+    );
+  }
 
   if (
     paciente.nome.trim() ||
@@ -916,7 +1122,7 @@ export function laudoParaHtml(
           .replace(/&amp;/g, "&")
           .replace(/&lt;/g, "<")
           .replace(/&gt;/g, ">");
-        return `<div class="laudo-mapa-mmii"><img src="${src}" alt="Mapa esquemático MMII" /></div>`;
+        return `<div class="laudo-mapa-mmii laudo-com-lupa"><img src="${src}" alt="Cartografia / mapa esquemático" /><button type="button" class="laudo-lupa-btn" contenteditable="false" aria-label="Ampliar cartografia"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`;
       }
       if (!linha.trim()) return "<br/>";
       return `<p class="laudo-p">${linha}</p>`;

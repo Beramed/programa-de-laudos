@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import EditarPerfilModal from "@/components/EditarPerfilModal";
-import LaudoBuilder from "@/components/LaudoBuilder";
+import LaudoBuilder, {
+  type LaudoBuilderHandle,
+} from "@/components/LaudoBuilder";
+import PacientesSalvosModal from "@/components/PacientesSalvosModal";
+import {
+  getModalidade,
+  modalidadeTemLaudos,
+  type ModalidadeId,
+} from "@/data/modalidades";
 import {
   getSessao,
   logout,
@@ -37,11 +46,18 @@ function IconeLapis() {
   );
 }
 
-export default function LaudosGate() {
+type Props = {
+  modalidadeId?: ModalidadeId;
+};
+
+export default function LaudosGate({ modalidadeId = "ultrassom" }: Props) {
   const router = useRouter();
   const [medico, setMedico] = useState<SessaoMedico | null>(null);
   const [pronto, setPronto] = useState(false);
   const [editando, setEditando] = useState(false);
+  const [pacientesAberto, setPacientesAberto] = useState(false);
+  const builderRef = useRef<LaudoBuilderHandle>(null);
+  const modalidade = getModalidade(modalidadeId);
 
   useEffect(() => {
     const s = getSessao();
@@ -67,6 +83,7 @@ export default function LaudosGate() {
   }
 
   const titulo = tituloMedico(medico);
+  const temLaudos = modalidadeTemLaudos(modalidadeId);
 
   return (
     <div className="laudos-shell">
@@ -86,7 +103,10 @@ export default function LaudosGate() {
               <IconeLapis />
             </button>
           </p>
-          <p className="medico-crm">CRM {medico.crm}</p>
+          <p className="medico-crm">
+            CRM {medico.crm}
+            {modalidade ? ` · ${modalidade.nome}` : null}
+          </p>
           {(medico.especialidade || medico.rqe || medico.telefone) && (
             <p className="medico-meta">
               {[
@@ -99,17 +119,58 @@ export default function LaudosGate() {
             </p>
           )}
         </div>
-        <button type="button" className="btn ghost small" onClick={sair}>
-          Sair
-        </button>
+        <div className="medico-banner-acoes">
+          <Link href="/exames" className="btn ghost small">
+            Trocar exame
+          </Link>
+          {temLaudos ? (
+            <button
+              type="button"
+              className="btn ghost small"
+              onClick={() => setPacientesAberto(true)}
+            >
+              Pacientes salvos
+            </button>
+          ) : null}
+          <button type="button" className="btn ghost small" onClick={sair}>
+            Sair
+          </button>
+        </div>
       </div>
-      <LaudoBuilder medico={medico} />
+
+      {temLaudos ? (
+        <LaudoBuilder
+          ref={builderRef}
+          medico={medico}
+          modalidadeId={modalidadeId}
+        />
+      ) : (
+        <div className="modalidade-vazia">
+          <h2>{modalidade?.nome ?? "Modalidade"}</h2>
+          <p>
+            Os laudos desta modalidade serão disponibilizados em breve. Enquanto
+            isso, você pode voltar e escolher Ultrassom ou Ecocardiografia.
+          </p>
+          <Link href="/exames" className="btn primary">
+            Voltar à escolha de exame
+          </Link>
+        </div>
+      )}
+
       <EditarPerfilModal
         medico={medico}
         aberto={editando}
         onFechar={() => setEditando(false)}
         onSalvo={setMedico}
       />
+      {temLaudos ? (
+        <PacientesSalvosModal
+          aberto={pacientesAberto}
+          crm={medico.crm}
+          onFechar={() => setPacientesAberto(false)}
+          onAbrir={(salvo) => builderRef.current?.carregarPacienteSalvo(salvo)}
+        />
+      ) : null}
     </div>
   );
 }

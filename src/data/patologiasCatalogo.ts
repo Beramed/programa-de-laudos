@@ -135,8 +135,7 @@ Hilo hepático de aspecto normal.`,
     {
       id: "hepatomegalia-homogenea",
       label: "Hepatomegalia homogênea",
-      texto: `Fígado de morfologia e contornos normais com dimensões aumentadas , medindo o lobo esquerdo: cm longitudinal (normal
-< 10,0 cm) e o lobo direito: cm longitudinal (normal < 15,0 cm).`,
+      texto: `Fígado de morfologia e contornos normais com dimensões aumentadas, medindo o lobo esquerdo: ____ cm longitudinal (normal < 10,0 cm) e o lobo direito: ____ cm longitudinal (normal < 15,0 cm).`,
       impressao: `Imagem sugestiva de hepatomegalia homogênea leve.`,
     },
     {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   FACES,
   LOCAIS_SEGMENTO,
@@ -16,6 +15,7 @@ import {
   type TributariaItem,
 } from "@/lib/mmiiVenosoForm";
 import MarcadorImagemMmii from "@/components/MarcadorImagemMmii";
+import { useState } from "react";
 
 type Props = {
   valor: MmiiVenosoFormState;
@@ -74,7 +74,7 @@ const LOCAIS_VSP_PARCIAL = [
 
 export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
   const form = valor ?? formVenosoVazio();
-  const [mostrarMapa, setMostrarMapa] = useState(Boolean(form.mapaPng));
+  const [capturaToken, setCapturaToken] = useState(0);
 
   function set(parcial: Partial<MmiiVenosoFormState>) {
     onChange({ ...form, ...parcial });
@@ -122,7 +122,8 @@ export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
 
   return (
     <div className="mmii-venoso-painel">
-      <div className="mmii-venoso-col">
+      <div className="mmii-venoso-grid">
+        <div className="mmii-venoso-col">
           <section className="mmii-bloco">
             <h4>Medidas (mm)</h4>
             <div className="mmii-medidas">
@@ -230,13 +231,11 @@ export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
               <h4>Veias perfurantes</h4>
               <button
                 type="button"
-                className="btn-plus-mini"
+                className="btn ghost small"
                 disabled={disabled}
                 onClick={() =>
                   set({ perfurantes: [...form.perfurantes, novaPerfurante()] })
                 }
-                title="Adicionar perfurante"
-                aria-label="Adicionar perfurante"
               >
                 +
               </button>
@@ -266,7 +265,7 @@ export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
                 />
                 <button
                   type="button"
-                  className="btn-x-mini"
+                  className="btn ghost small"
                   disabled={disabled}
                   onClick={() =>
                     set({
@@ -286,13 +285,11 @@ export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
               <h4>Veias tributárias</h4>
               <button
                 type="button"
-                className="btn-plus-mini"
+                className="btn ghost small"
                 disabled={disabled}
                 onClick={() =>
                   set({ tributarias: [...form.tributarias, novaTributaria()] })
                 }
-                title="Adicionar tributária"
-                aria-label="Adicionar tributária"
               >
                 +
               </button>
@@ -324,14 +321,13 @@ export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
                 </label>
                 <button
                   type="button"
-                  className="btn-x-mini"
+                  className="btn ghost small"
                   disabled={disabled}
                   onClick={() =>
                     set({
                       tributarias: form.tributarias.filter((x) => x.id !== t.id),
                     })
                   }
-                  aria-label="Remover"
                 >
                   ×
                 </button>
@@ -502,13 +498,11 @@ export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
               <h4>Veias reticulares</h4>
               <button
                 type="button"
-                className="btn-plus-mini"
+                className="btn ghost small"
                 disabled={disabled}
                 onClick={() =>
                   set({ reticulares: [...form.reticulares, novaReticular()] })
                 }
-                title="Adicionar reticular"
-                aria-label="Adicionar reticular"
               >
                 +
               </button>
@@ -538,14 +532,13 @@ export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
                 />
                 <button
                   type="button"
-                  className="btn-x-mini"
+                  className="btn ghost small"
                   disabled={disabled}
                   onClick={() =>
                     set({
                       reticulares: form.reticulares.filter((x) => x.id !== r.id),
                     })
                   }
-                  aria-label="Remover"
                 >
                   ×
                 </button>
@@ -610,7 +603,7 @@ export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
           </section>
 
           <section className="mmii-bloco">
-            <h4>Observações</h4>
+            <h4>Observações adicionais</h4>
             <label className="check-row">
               <input
                 type="checkbox"
@@ -715,31 +708,32 @@ export default function MmiiVenosoPainel({ valor, onChange, disabled }: Props) {
               />
             </label>
           </section>
+        </div>
+      </div>
 
-          <section className="mmii-bloco">
-            <label className="check-row">
-              <input
-                type="checkbox"
-                disabled={disabled}
-                checked={mostrarMapa}
-                onChange={(e) => {
-                  const on = e.target.checked;
-                  setMostrarMapa(on);
-                  if (!on) set({ mapaPng: "" });
-                }}
-              />
-              Marcar no esquema
-            </label>
-            {mostrarMapa ? (
-              <div className="mmii-venoso-marcador">
-                <MarcadorImagemMmii
-                  valor={form.mapaPng}
-                  disabled={disabled}
-                  onChange={(mapaPng) => set({ mapaPng })}
-                />
-              </div>
-            ) : null}
-          </section>
+      <div className="mmii-venoso-marcador">
+        <div className="mmii-bloco-head">
+          <h4>Marcação no esquema</h4>
+          <label className="check-row mmii-anexar-cartografia">
+            <input
+              type="checkbox"
+              disabled={disabled}
+              checked={form.anexarCartografia}
+              onChange={(e) => {
+                const on = e.target.checked;
+                set({ anexarCartografia: on });
+                if (on) setCapturaToken((t) => t + 1);
+              }}
+            />
+            Anexar cartografia no laudo
+          </label>
+        </div>
+        <MarcadorImagemMmii
+          valor={form.mapaPng}
+          disabled={disabled}
+          capturaToken={capturaToken}
+          onChange={(mapaPng) => set({ mapaPng })}
+        />
       </div>
     </div>
   );

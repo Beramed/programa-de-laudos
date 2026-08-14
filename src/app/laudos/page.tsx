@@ -1,5 +1,6 @@
-import LaudosGate from "@/components/LaudosGate";
+import { redirect } from "next/navigation";
 
-export default function LaudosPage() {
-  return <LaudosGate />;
+/** Compatibilidade: /laudos → hub de modalidades */
+export default function LaudosRedirectPage() {
+  redirect("/exames");
 }

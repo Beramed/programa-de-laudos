@@ -34,6 +34,8 @@ export default function CadastroForm() {
   const [rqe, setRqe] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmar, setConfirmar] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
   const [genero, setGenero] = useState<Genero>("Dr.");
   const [locaisTrabalho, setLocaisTrabalho] = useState<string[]>([]);
   const [localAtivo, setLocalAtivo] = useState("");
@@ -50,7 +52,7 @@ export default function CadastroForm() {
       router.replace("/admin");
       return;
     }
-    if (getSessao()) router.replace("/laudos");
+    if (getSessao()) router.replace("/exames");
   }, [router]);
 
   async function onCepChange(valor: string) {
@@ -123,7 +125,7 @@ export default function CadastroForm() {
 
     autenticar(crm, senha);
     setOk("Cadastro realizado com sucesso.");
-    router.push("/laudos");
+    router.push("/exames");
   }
 
   return (
@@ -341,30 +343,94 @@ export default function CadastroForm() {
             }}
           />
 
-          <label className="field">
+          <label className="field field-senha">
             <span>Senha de acesso</span>
-            <input
-              type="password"
-              value={senha}
-              onChange={(ev) => setSenha(ev.target.value)}
-              placeholder="6–18 caracteres"
-              minLength={6}
-              maxLength={18}
-              required
-            />
+            <div className="senha-input-wrap">
+              <input
+                type={mostrarSenha ? "text" : "password"}
+                value={senha}
+                onChange={(ev) => setSenha(ev.target.value)}
+                placeholder="6–18 caracteres"
+                minLength={6}
+                maxLength={18}
+                autoComplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                className="senha-eye"
+                onClick={() => setMostrarSenha((v) => !v)}
+                aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {mostrarSenha ? (
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden>
+                    <path
+                      d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 4.8c5 0 9.3 3.3 10.5 7.7a11 11 0 0 1-1.7 3.3M6.1 6.1A11 11 0 0 0 1.5 12.5C2.7 16.9 7 20.2 12 20.2c1.7 0 3.3-.4 4.7-1"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden>
+                    <path
+                      d="M1.5 12.5C2.7 8.1 7 4.8 12 4.8s9.3 3.3 10.5 7.7C21.3 16.9 17 20.2 12 20.2S2.7 16.9 1.5 12.5z"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
+                    <circle cx="12" cy="12.5" r="3" stroke="currentColor" strokeWidth="1.8" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </label>
 
-          <label className="field">
+          <label className="field field-senha">
             <span>Confirmar senha</span>
-            <input
-              type="password"
-              value={confirmar}
-              onChange={(ev) => setConfirmar(ev.target.value)}
-              placeholder="Repita a senha"
-              minLength={6}
-              maxLength={18}
-              required
-            />
+            <div className="senha-input-wrap">
+              <input
+                type={mostrarConfirmar ? "text" : "password"}
+                value={confirmar}
+                onChange={(ev) => setConfirmar(ev.target.value)}
+                placeholder="Repita a senha"
+                minLength={6}
+                maxLength={18}
+                autoComplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                className="senha-eye"
+                onClick={() => setMostrarConfirmar((v) => !v)}
+                aria-label={
+                  mostrarConfirmar ? "Ocultar confirmação" : "Mostrar confirmação"
+                }
+                title={
+                  mostrarConfirmar ? "Ocultar confirmação" : "Mostrar confirmação"
+                }
+              >
+                {mostrarConfirmar ? (
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden>
+                    <path
+                      d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 4.8c5 0 9.3 3.3 10.5 7.7a11 11 0 0 1-1.7 3.3M6.1 6.1A11 11 0 0 0 1.5 12.5C2.7 16.9 7 20.2 12 20.2c1.7 0 3.3-.4 4.7-1"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden>
+                    <path
+                      d="M1.5 12.5C2.7 8.1 7 4.8 12 4.8s9.3 3.3 10.5 7.7C21.3 16.9 17 20.2 12 20.2S2.7 16.9 1.5 12.5z"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
+                    <circle cx="12" cy="12.5" r="3" stroke="currentColor" strokeWidth="1.8" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </label>
 
           <p className="auth-hint full">

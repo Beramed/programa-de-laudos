@@ -4,6 +4,8 @@ export type CategoriaExameId =
   | "medicina-interna"
   | "ginecologia"
   | "obstetricia"
+  | "cardiologia"
+  | "pediatria"
   | "musculo-esqueletico"
   | "vascular"
   | "urologia";
@@ -23,6 +25,9 @@ export const categoriasExame: CategoriaExame[] = [
       "abdome-total",
       "abdome-superior",
       "intestino-mesenterio",
+      "elastografia-hepatica",
+      "avaliacao-multiparametrica-hepatica",
+      "doppler-hepatico",
       "tireoide",
       "glandulas-salivares",
       "regiao-cervical",
@@ -42,12 +47,41 @@ export const categoriasExame: CategoriaExame[] = [
       "axilas",
       "pelvica",
       "pelvica-tv",
+      "pelvico-tv-doppler",
+      "pelvico-tv-hycosy",
+      "histerossonografia",
+      "hycosy",
+      "endometriose",
+      "monitoracao-folicular",
     ],
   },
   {
     id: "obstetricia",
     nome: "Obstetrícia",
-    exameIds: ["obstetrico"],
+    exameIds: [
+      "obstetrico-tv-precoce",
+      "obstetrico-morfo-1t",
+      "obstetrico-gemelar-1t",
+      "obstetrico",
+      "obstetrico-morfo-2t",
+      "obstetrico-doppler",
+      "obstetrico-gemelar-doppler",
+      "obstetrico-3d4d",
+      "obstetrico-perfil-biofisico",
+      "cervicometria",
+      "eco-fetal",
+      "eco-fetal-gemelar",
+    ],
+  },
+  {
+    id: "cardiologia",
+    nome: "Cardiologia",
+    exameIds: ["ecocardiograma"],
+  },
+  {
+    id: "pediatria",
+    nome: "Pediatria",
+    exameIds: ["transfontanelar", "quadril-infantil"],
   },
   {
     id: "musculo-esqueletico",
@@ -67,7 +101,15 @@ export const categoriasExame: CategoriaExame[] = [
   {
     id: "vascular",
     nome: "Vascular",
-    exameIds: ["carotidas", "vertebrais", "mmii-arterial", "mmii-venoso"],
+    exameIds: [
+      "carotidas",
+      "vertebrais",
+      "arterias-temporais",
+      "mmii-arterial",
+      "mmii-venoso",
+      "mmss-arterial",
+      "mmss-venoso",
+    ],
   },
   {
     id: "urologia",
@@ -75,6 +117,7 @@ export const categoriasExame: CategoriaExame[] = [
     exameIds: [
       "aparelho-urinario",
       "prostata",
+      "prostata-transretal",
       "bolsa-testicular",
       "penis",
     ],

@@ -81,7 +81,8 @@ export function tabelasDoExame(
   if (
     exameId === "mamas" ||
     exameId === "mamas-doppler" ||
-    exameId === "mamas-masculino"
+    exameId === "mamas-masculino" ||
+    exameId === "mamografia"
   ) {
     return [TABELAS["bi-rads"]];
   }
@@ -101,7 +102,7 @@ export function htmlTabelasAnexas(ids: string[], baseUrl = ""): string {
     .filter(Boolean)
     .map((t) => {
       const src = origin ? `${origin}${t.src}` : t.src;
-      return `<figure class="laudo-tabela"><img src="${src}" alt="${t.alt}" /></figure>`;
+      return `<figure class="laudo-tabela laudo-com-lupa"><img src="${src}" alt="${t.alt}" /><button type="button" class="laudo-lupa-btn" contenteditable="false" aria-label="Ampliar tabela"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></figure>`;
     });
   if (imgs.length === 0) return "";
   return `<div class="laudo-tabelas">${imgs.join("")}</div>`;

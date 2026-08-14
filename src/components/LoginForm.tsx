@@ -23,7 +23,7 @@ export default function LoginForm() {
       router.replace("/admin");
       return;
     }
-    if (getSessao()) router.replace("/laudos");
+    if (getSessao()) router.replace("/exames");
   }, [router]);
 
   function onSubmit(e: FormEvent) {
@@ -46,7 +46,7 @@ export default function LoginForm() {
       router.push("/admin");
       return;
     }
-    router.push("/laudos");
+    router.push("/exames");
   }
 
   return (
